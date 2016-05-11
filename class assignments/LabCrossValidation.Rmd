@@ -1,0 +1,280 @@
+---
+title: 'Lab: Cross-Validation'
+author: ''
+date: '`r format(Sys.time(), "%b %d, %Y")`'
+output: 
+  html_document: 
+    css: ~/STT3851Spring2016/CSS/normalize.css
+    highlight: textmate
+    theme: readable
+---
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(comment = NA, fig.align = 'center', fig.height = 5, fig.width = 5, prompt = FALSE, 
+highlight = TRUE, tidy = FALSE, warning = FALSE, message = FALSE, 
+tidy.opts=list(blank = TRUE, width.cutoff = 80))
+```
+
+##The Validation Set Approach##
+
+We explore the use of the validation set approach in order to estimate the test error rates that result from fitting various linear models on the `Auto` data set.
+
+Before we begin, we use the `set.seed()` function in order to set a seed for seed `R`’s random number generator, so that the reader will obtain precisely the same results as those shown below. It is generally a good idea to set a random seed when performing an analysis such as cross-validation that contains an element of randomness, so that the results obtained can be reproduced precisely at a later time.
+
+We begin by using the `sample()` function to split the set of observations into two halves, by selecting a random subset of 196 observations out of the original 392 observations. We refer to these observations as the training set.
+
+```{r}
+library(ISLR)
+set.seed(1)
+train <- sample(392, 196)
+```
+
+(Here we use a shortcut in the sample command; see `?sample` for details.) We then use the subset option in `lm()` to fit a linear regression using only the observations corresponding to the training set.
+
+```{r}
+lm.fitA <- lm(mpg ~ horsepower, data = Auto, subset = train)
+trainSET <- Auto[train, ]
+validSET <- Auto[-train, ]
+lm.fitB <- lm(mpg ~ horsepower, data = trainSET)
+summary(lm.fitA)
+```
+
+```{r}
+summary(lm.fitB)
+```
+
+We now use the `predict()` function to estimate the response for all 392 observations, and we use the `mean()` function to calculate the MSE of the 196 observations in the validation set. Note that the `-train` index below selects only the observations that are not in the training set.
+
+```{r}
+EMSE <- mean((Auto$mpg - predict(lm.fitA, newdata = Auto))[-train]^2)
+EMSE
+```
+
+```{r}
+# Or
+EMSE <- mean((validSET$mpg - predict(lm.fitA, newdata = validSET))^2)
+EMSE
+```
+
+Therefore, the estimated test MSE for the linear regression fit is `r EMSE`. We can use the `poly()` function to estimate the test error for the polynomial and cubic regressions.
+
+```{r}
+lm.fit2 <- lm(mpg ~ poly(horsepower, 2), data = Auto, subset = train)
+EMSE2 <- mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)
+EMSE2
+```
+
+```{r}
+# Or
+EMSE2 <- mean((validSET$mpg - predict(lm.fit2, newdata = validSET))^2)
+EMSE2
+```
+
+```{r}
+#
+lm.fit3 <- lm(mpg ~ poly(horsepower, 3), data = Auto, subset = train)
+EMSE3 <- mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)
+EMSE3
+```
+
+```{r}
+# Or
+EMSE3 <- mean((validSET$mpg - predict(lm.fit3, newdata = validSET))^2)
+EMSE3
+```
+
+These error rates are `r mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)` and `r mean((validSET$mpg - predict(lm.fit3, newdata = validSET))^2)`, respectively. If we choose a different training set instead, then we will obtain somewhat different errors on the validation set.
+
+```{r}
+set.seed(2)
+train <- sample(392, 196)
+trainSET <- Auto[train, ]
+validSET <- Auto[-train, ]
+lm.fit1 <- lm(mpg ~ horsepower, data = Auto, subset = train)
+EMSE1 <- mean((Auto$mpg - predict(lm.fit1, newdata = Auto))[-train]^2)
+EMSE1
+```
+
+```{r}
+# Or
+EMSE1 <- mean((validSET$mpg - predict(lm.fit1, newdata = validSET))^2)
+EMSE1
+```
+
+```{r}
+lm.fit2 <- lm(mpg ~ poly(horsepower, 2), data = Auto, subset = train)
+EMSE2 <- mean((Auto$mpg - predict(lm.fit2, newdata = Auto))[-train]^2)
+EMSE2
+```
+
+```{r}
+# Or
+EMSE2 <- mean((validSET$mpg - predict(lm.fit2, newdata = validSET))^2)
+EMSE2
+```
+
+```{r}
+lm.fit3 <- lm(mpg ~ poly(horsepower, 3), data = Auto, subset = train)
+ESME3 <- mean((Auto$mpg - predict(lm.fit3, newdata = Auto))[-train]^2)
+EMSE3
+```
+
+```{r}
+# Or
+EMSE3 <- mean((validSET$mpg - predict(lm.fit3, newdata = validSET))^2)
+EMSE3
+```
+
+Using this split of the observations into a training set and a validation set, we find that the validation set error rates for the models with linear, quadratic, and cubic terms are `r EMSE1`, `r EMSE2`, and `r EMSE3`, respectively.
+
+These results are consistent with our previous findings: a model that predicts `mpg` using a quadratic function of `horsepower`  performs better than a model that involves only a linear function of `horsepower`, and there is little evidence in favor of a model that uses a cubic function of `horsepower`.
+
+##Leave-One-Out Cross-Validation##
+
+The LOOCV estimate can be automatically computed for any generalized linear model using the `glm()` and `cv.glm()` functions. If we use `glm()` to fit a model without passing in the family argument, then it performs linear regression, just like the `lm()` function. So for instance,
+
+```{r}
+glm.fit <- glm(mpg ~ horsepower, data = Auto)
+coef(glm.fit)
+```
+
+and
+
+```{r}
+lm.fit <- lm(mpg ~ horsepower, data = Auto)
+coef(lm.fit)
+```
+
+yield identical linear regression models. In this lab, we will perform linear regression using the `glm()` function rather than the `lm()` function because the latter can be used together with `cv.glm()`. The `cv.glm()` function is part of the `boot` package.
+
+```{r}
+library(boot)
+glm.fit <- glm(mpg ~ horsepower, data = Auto)
+cv.err = cv.glm(data = Auto, glmfit = glm.fit)
+cv.err$delta
+```
+
+The `cv.glm()` function produces a list with several components. The two numbers in the delta vector contain the cross-validation results. In this `cv.glm()` case the numbers are identical (up to two decimal places) and correspond to the LOOCV statistic. Below, we discuss a situation in which the two numbers differ. Our cross-validation estimate for the test error is approximately `r cv.err$delta[row=1]`.
+
+We can repeat this procedure for increasingly complex polynomial fits. To automate the process, we use the `for()` function to initiate a for loop which iteratively fits polynomial regressions for polynomials of order `i = 1` to `i = 5`, computes the associated cross-validation error, and stores it in the `i`$^{th}$ element of the vector `cv.error`. We begin by initializing the vector. This command will likely take a couple of minutes to run.
+
+```{r}
+cv.error <- numeric(5)
+for(i in 1:5){
+  glm.fit <- glm(mpg ~ poly(horsepower, i), data = Auto)
+  cv.error[i] <- cv.glm(data = Auto, glmfit = glm.fit)$delta[1]
+}
+cv.error
+```
+
+##k-Fold Cross-Validation##
+
+The `cv.glm()` function can also be used to implement $k$-fold CV. Below we use `k = 10`, a common choice for $k$, on the `Auto` data set. We once again set a random seed and initialize a vector in which we will store the CV errors corresponding to the polynomial fits of orders one to ten.
+
+```{r}
+set.seed(17)
+cv.error.10 <- numeric(10)
+for(i in 1:10){
+  glm.fit <- glm(mpg ~ poly(horsepower, i), data = Auto)
+  cv.error.10[i] <- cv.glm(data = Auto, glmfit = glm.fit, K = 10)$delta[1]
+}
+cv.error.10
+```
+
+Notice that the computation time is much shorter than that of LOOCV. (In principle, the computation time for LOOCV for a least squares linear model should be faster than for $k$-fold CV, due to the availability of $$CV_\left(n\right)=\frac{1}{n}\sum\limits_{i=1}^n \left(\frac{y_i - \hat{y_i}}{1- h_i}^2\right),$$ for LOOCV; however, unfortunately the `cv.glm()` function does not make use of this formula.) We still see little evidence that using cubic or higher-order polynomial terms leads to lower test error than simply using a quadratic fit.
+
+We saw in the last section that the two numbers associated with delta are essentially the same when LOOCV is performed. When we instead perform $k$-fold CV, then the two numbers associated with delta differ slightly. The first is the standard $k$-fold CV estimate, as in $$CV_\left(k \right)=\frac{1}{k}\sum\limits_{i=1}^k MSE_i.$$ The second is a bias-corrected version. On this data set, the two estimates are very similar to each other.
+
+##5-Fold Cross-Validation##
+
+Compute 5-fold Cross Validation errors for `mod.be`, `mod.fs`, `mod1`, `mod2`, and `mod3` from Project 1.
+
+```{r}
+site <- "http://www.amstat.org/publications/jse/datasets/homes76.dat.txt"
+HP <- read.table(file = site, header = TRUE)
+# Removing indicated columns
+HP <- HP[ ,-c(1, 7, 10, 15, 16, 17, 18, 19)]
+# Renaming columns
+names(HP) <- c("price", "size", "lot", "bath", "bed", "year", "age", 
+               "garage", "status", "active", "elem")
+mod.be <- glm(price ~ size + lot + bed + status + elem, data = HP)
+mod.fs <- glm(price ~ elem + garage + lot + active + size + bed, data = HP)
+mod1 <- glm(price ~ . - status - year, data = HP)
+mod2 <- update(mod1, .~. + bath:bed + I(age^2))
+mod3 <- glm(price ~ size + lot + bath + bed + bath:bed + age + I(age^2) + 
+              garage + active + I(elem == 'edison') + I(elem == 'harris'), 
+            data = HP)
+library(boot)
+CV5mod.be <- cv.glm(data = HP, glmfit = mod.be, K = 5)$delta
+CV5mod.be
+```
+
+```{r}
+CV5mod.be^.5
+```
+
+```{r}
+CV5mod.fs <- cv.glm(data = HP, glmfit = mod.fs, K = 5)$delta
+CV5mod.fs
+```
+
+```{r}
+CV5mod.fs^.5
+```
+
+```{r}
+CV5mod1 <- cv.glm(data = HP, glmfit = mod1, K = 5)$delta
+CV5mod1
+```
+
+```{r}
+CV5mod1^.5
+```
+
+```{r}
+CV5mod2 <- cv.glm(data = HP, glmfit = mod2, K = 5)$delta
+CV5mod2
+```
+
+```{r}
+CV5mod2^.5
+```
+
+```{r}
+CV5mod3 <- cv.glm(data = HP, glmfit = mod3, K = 5)$delta
+CV5mod3
+```
+
+```{r}
+CV5mod3^.5
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

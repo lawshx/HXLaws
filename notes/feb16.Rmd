@@ -1,0 +1,58 @@
+---
+title: "Feb 16, 2016 Notes"
+author: "Hannah Xiao Si Laws"
+date: 'Last Updated on: `r format(Sys.time(), "%b %d, %Y at %X")`'
+output: html_document
+---
+```{r}
+site <- "http://www-bcf.usc.edu/~gareth/ISL/Advertising.csv"
+AD <- read.csv(site)
+head(AD)
+
+plot(AD$TV, AD$Sales, main = "TV Sales", xlab = "TV", ylab = "Sales")
+#or
+plot(Sales ~ TV, data = AD, col = "red", pch = 19)
+
+mod1<-lm(Sales ~ TV, data = AD)
+abline(mod1, col = "blue")
+
+#lm() function performs these calculations
+x <- AD$TV
+y <- AD$Sales
+b1<-sum((x - mean(x))*(y-mean(y)))/sum((x-mean(x))^2)
+b1
+
+b0<-mean(y)-(b1*mean(x))
+b0
+abline(b0, b1, col = "purple", lwd = 5)
+
+
+
+resid(mod1)
+sum(resid(mod1)^2) #Sum of Squared Errors
+#resid() performs below functions
+pt(17.67,198,lower = FALSE)*2
+coef(summary(mod1))
+ct<- coef(summary(mod1))[2,3]
+pt(ct,198, lower = FALSE)*2
+yhat<- b0 + b1*x
+ei<- y - yhat
+ei
+
+
+
+anova(mod1)
+
+qt(.975,198)
+
+
+#calculating 95% confidence interval for slope, b1
+b1+c(-1,1)*qt(.975,198)*0.002691
+#or you could jsut use this
+confint(mod1)
+
+X<-model.matrix(mod1)
+dim(X)
+head(X)
+betahat <- solve(t(X)%*%X)%*%t(X)%*%y
+betahat
