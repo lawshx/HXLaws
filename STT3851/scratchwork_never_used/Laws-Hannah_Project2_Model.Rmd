@@ -1,0 +1,395 @@
+---
+title: "Project2"
+author: "Hannah Laws"
+date: '`r format(Sys.time(), "%B %d, %Y")`'
+output: html_document
+---
+
+```{r, label = "SETUP", echo = FALSE, results= 'hide', message = FALSE, warning = FALSE}
+library(knitr)
+knitr::opts_chunk$set(comment = NA, fig.align = 'center', fig.height = 5, fig.width = 5, prompt = FALSE, 
+highlight = TRUE, tidy = FALSE, warning = FALSE, message = FALSE, 
+tidy.opts=list(blank = TRUE, width.cutoff = 80))
+
+```
+
+```
+data - king county
+sqft_living15 - avg sqft of nearest 15 neighbors
+grade: (building grade) 1 - 13 low - high
+condition (bulding condition) 1-5 poor - high
+```
+
+
+```{r}
+library(car)
+library(ggplot2)
+library(leaps)
+
+housedata <- read.csv("~/Laws-Hannah/Project2/Data/housedata.csv", 
+                      colClasses = c(id = "character", date = "character", 
+                                     yr_built = "character", zipcode = "factor", grade = "factor"))
+housedata$date <- as.Date(housedata$date, "%Y%m%d")
+housedata$waterfront <- factor(housedata$waterfront, labels = c("No", "Yes"))
+housedata$condition <- factor(housedata$condition, labels = c("poor", "fair", "average", "good", "very good"))
+housedata$yr_renovated <- ifelse(housedata$yr_renovated == 0, housedata$yr_built, housedata$yr_renovated)
+housedata$yr_built <- as.Date(ISOdate(housedata$yr_built, 9, 1))  # Complete Year, Sept 1
+housedata$yr_renovated <- as.Date(ISOdate(housedata$yr_renovated, 9, 1))  # Last renovated Year, Sept 1
+housedata <- housedata[, -1]
+#### Perform same steps with test set
+housedataT <- read.csv("~/Laws-Hannah/Project2/Data/housedataTEST.csv", 
+                      colClasses = c(id = "character", date = "character", 
+                                     yr_built = "character", zipcode = "factor", grade = "factor"))
+housedataT$date <- as.Date(housedataT$date, "%Y%m%d")
+housedataT$waterfront <- factor(housedataT$waterfront, labels = c("No", "Yes"))
+housedataT$condition <- factor(housedataT$condition, labels = c("poor", "fair", "average", "good", "very good"))
+housedataT$yr_renovated <- ifelse(housedataT$yr_renovated == 0, housedataT$yr_built, housedataT$yr_renovated)
+housedataT$yr_built <- as.Date(ISOdate(housedataT$yr_built, 9, 1))  # Complete Year, Sept 1
+housedataT$yr_renovated <- as.Date(ISOdate(housedataT$yr_renovated, 9, 1))  # Last renovated Year, Sept 1
+housedataT <- housedataT[, -1]
+
+
+
+#######picking out the number of variables needed###############
+
+
+pbedrooms <- ggplot(data = housedata, aes(x = bedrooms, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+
+pbathrooms <- ggplot(data = housedata, aes(x = bathrooms, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pbedbath <- ggplot(data = housedata, aes(x = bedrooms, y = bathrooms)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pview <- ggplot(data = housedata, aes(x = view, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+
+pcondition <- ggplot(data = housedata, aes(x = condition, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pcondview <- ggplot(data = housedata, aes(x = condition, y = view)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+platlong <- ggplot(data = housedata, aes(x = lat, y = long)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+plat <- ggplot(data = housedata, aes(x = lat, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+plong <- ggplot(data = housedata, aes(x = long, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_lot <- ggplot(data = housedata, aes(x = sqft_lot, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_living <- ggplot(data = housedata, aes(x = sqft_living, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_living15 <- ggplot(data = housedata, aes(x = sqft_living15, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+ 
+psqft_lot15 <- ggplot(data = housedata, aes(x = sqft_lot15, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_above <- ggplot(data = housedata, aes(x = sqft_above, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pyr_built <- ggplot(data = housedata, aes(x = yr_built, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pyr_renovated <- ggplot(data = housedata, aes(x = yr_renovated, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pyr_renovatedbuilt <- ggplot(data = housedata, aes(x = yr_renovated, y = yr_built)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pwaterfront <- ggplot(data = housedata, aes(x = waterfront, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pwaterfrontview <- ggplot(data = housedata, aes(x = waterfront, y = view)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_livinglot <- ggplot(data = housedata, aes(x = sqft_living, y = sqft_lot)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+psqft_livingabove <- ggplot(data = housedata, aes(x = sqft_living, y = sqft_above)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_aboveview <- ggplot(data = housedata, aes(x = sqft_above, y = view)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+psqft_livingbed <- ggplot(data = housedata, aes(x = sqft_living, y = bedrooms)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pwaterfrontfloor <- ggplot(data = housedata, aes(x = waterfront, y = floors)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pzipcode <- ggplot(data = housedata, aes(x = zipcode, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pzipcodesqft_living <- ggplot(data = housedata, aes(x = zipcode, y = sqft_living)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+pgrade <- ggplot(data = housedata, aes(x = grade, y = price)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+
+pgradecondition <- ggplot(data = housedata, aes(x = grade, y = condition)) + 
+        stat_binhex(bins = 50) + 
+        scale_fill_gradient(low = "lightblue", high = "red", 
+                            limits = c(0, 1000), breaks = seq(0, 1000, by = 200)) +
+        theme_bw()
+
+
+pgradecondition# doesn't seem like a useful relationship 
+
+pgrade #inverse relationship with price, interesting
+
+pzipcodesqft_living # some zipcodes have houses with slightly less sqft_living
+
+
+pzipcode # certain zipcodes where price is higher
+
+
+
+
+pwaterfrontfloor #...its something
+
+
+
+psqft_livingbed # broad realtionship
+
+
+
+psqft_aboveview # slight relationship if counting outliers
+
+psqft_livingabove#linear relationship
+
+psqft_livinglot # very slight
+
+pwaterfrontview # almost no noticible advantage of view growing with waterfront
+
+
+
+psqft_living ; psqft_lot; psqft_lot15; psqft_living15
+#sqft_lot does not have a very clear relationship with price, however, sqft_living does
+#the same goes for sqft_lot15 and sqft_living15
+
+
+pbedrooms; pbathrooms 
+#happy medium with prices around 5bed rooms (think normal curve)
+#clearer linear relationship with bathrooms and price
+
+pbedbath # has linear relationship 
+
+pcondview #???
+
+pview #prices seem relatively the same throughout with the exception of a few outliers
+
+pcondition #condition also seems to have varied prices around the average mark
+
+plat; plong # both have very slight relationship to price
+platlong #no relationship
+
+psqft_above#linear relationship with price
+
+pyr_renovatedbuilt# strong linear relationship
+
+pyr_renovated;pyr_built #both have hardly any relationship to price
+
+pwaterfront # prices seem fairly similar 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#got to have this
+predict.regsubsets=function(object,newdata ,id ,...){
+form <- as.formula(object$call[[2]])
+mat <- model.matrix(form,newdata)
+coefi <- coef(object,id=id)
+xvars <- names(coefi)
+mat[,xvars]%*%coefi
+}
+
+
+k <- 10
+set.seed(1)
+folds <- sample(1:k, size = nrow(housedata), replace = TRUE)
+cv.errors <- matrix(NA, k, 26, dimnames = list(NULL, paste(1:26)))
+#
+for(j in 1:k){
+  best.fit <- regsubsets(price ~ waterfront:floors + sqft_living:bedrooms + sqft_living:sqft_above + view + sqft_living + I(sqft_living^2) + sqft_living15  + sqft_lot + sqft_lot15 + sqft_living:sqft_lot + sqft_living15:sqft_lot15 + bedrooms + I(bedrooms^2) + bathrooms + I(bathrooms^2) + bedrooms:bathrooms + condition + lat + long + sqft_above + I(sqft_above^2)+ yr_renovated + yr_built + yr_renovated:yr_built + waterfront + sqft_above:view , data = housedata[folds != j, ], nvmax = 26)
+  for(i in 1:26){
+    pred <- predict(best.fit, housedata[folds ==j,], id = i)
+    cv.errors[j, i] <- mean((housedata$price[folds==j] - pred)^2)
+  }
+}
+mean.cv.errors <- apply(cv.errors, 2, mean)
+# mean.cv.errors
+
+
+plot(mean.cv.errors, type = "b")
+which.min(mean.cv.errors)
+
+
+reg.best <- regsubsets(price ~ waterfront:floors + sqft_living:bedrooms + sqft_living:sqft_above + view + sqft_living + I(sqft_living^2) + sqft_living15  + sqft_lot + sqft_lot15 + sqft_living:sqft_lot + sqft_living15:sqft_lot15 + bedrooms + I(bedrooms^2) + bathrooms + I(bathrooms^2) + bedrooms:bathrooms + condition + lat + long + sqft_above + I(sqft_above^2)+ yr_renovated + yr_built + yr_renovated:yr_built + waterfront + sqft_above:view , data = housedata, nvmax = 26)
+
+
+
+coef(reg.best, which.min(mean.cv.errors))
+
+
+
+
+
+#smallest RSE 125400
+hxlmod.full <- lm(price ~ grade + zipcode + zipcode:sqft_living + bedrooms + sqft_living + I(sqft_living^2) + sqft_living15 + sqft_lot + sqft_lot15 + I(bathrooms^2) + condition + lat + long + I(sqft_above^2) + yr_renovated + yr_built + waterfront + waterfront:floors + sqft_living:bedrooms + sqft_living:sqft_above + sqft_living:sqft_lot + sqft_living15:sqft_lot15 + bedrooms:bathrooms + yr_renovated:yr_built + sqft_above:view , data = housedata)
+summary(hxlmod.full)
+
+
+
+mean(hxlmod.full$residuals^2)
+
+
+
+
+```
+
+
+
+```{r}
+
+#email this to teacher
+Laws_Hannah <- predict(hxlmod.full, newdata = housedataT)
+head(Laws_Hannah)
+
+write.csv(Laws_Hannah, file="~/Laws-Hannah/Project2/Laws_Hannah.csv")
+
+SMSPE <- sqrt(mean((head(Laws_Hannah) - c(310000, 650000, 233000, 580500, 535000, 605000))^2))
+SMSPE
+```
+
+sumbit the booktemplate thign to crowdgrader
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+mod.all <- lm(price ~ . - sqft_basement, data = housedata)
+summary(mod.all)
+mean(mod.all$residuals^2)
+
+
+
+
+
+#this has the lowest RSE 199200
+hxlmod1 <- lm(price ~ bathrooms + bedrooms + sqft_lot + waterfront + condition + sqft_above + yr_built + yr_renovated + sqft_living15 + sqft_lot15 + lat + long + I(sqft_living^2) + I(bathrooms^2) + sqft_living15:sqft_lot15 + yr_built:yr_renovated + bedrooms:bathrooms + sqft_lot:sqft_living + condition:view + sqft_above:view + bedrooms:sqft_living + waterfront:floors, data = housedata)
+summary(hxlmod1)
+```
+

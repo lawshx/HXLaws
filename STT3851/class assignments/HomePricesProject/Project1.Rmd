@@ -1,0 +1,103 @@
+---
+title: "Project1"
+author: "Hannah Xiao Si Laws"
+date: "3/15/2016"
+output: html_document
+---
+
+```{r}
+# install.packages("DT", "MASS", "car")
+library(DT)
+library(MASS)
+library(car)
+hp<-read.table("http://www.amstat.org/publications/jse/datasets/homes76.dat.txt", header = TRUE)
+hp<-hp[-c(1, 7, 10, 15, 16, 17, 18, 19)]
+colnames(hp) <- c("price" ,"size" ,"lot" ,"bath" ,"bed" ,"year" ,"age" ,"garage" ,"status" ,"active" ,"elem")
+datatable(hp)
+
+#What are the units for price and size?
+#price is measured in thousands of dollars
+#size is measured by thousands of square feet 
+
+
+
+
+mod.fs <- stepAIC(lm(price ~ 1 ,data = hp), scope = ~.+size + lot + bath + bed + year + age + garage + status + active + elem,  direction ="forward")
+mod.be <- stepAIC(lm(price ~ 1 ,data = hp), scope = ~.+size + lot + bath + bed + year + age + garage + status + active + elem,  direction ="backward")
+summary(mod.be);summary(mod.fs)
+
+#Which model (mod.be or mod.fs) do you believe is better and why?
+#mod.fs took more steps before stopping (6)
+#mod.be only took one
+#which means mod.fs did better because it took more steps, allowing for a better fit. Also the RSS in mod.fs is smaller than mod.be
+
+mod1 <- lm(price ~ size + lot + bath + bed + age + garage + elem +active ,data = hp)
+summary(mod1); residualPlots(mod1)
+#Based on your residual plots, what might you do to mod1?
+#mod1 needs more variables to create a better fit to data, aka the red line should be fairly flat
+
+#Report the adjusted R^2 value for mod1.
+#adjusted R-squared = 0.3998
+
+
+
+mod2 <- lm(price ~ size + lot + bath + bed + age + garage + elem + bath:bed + I(age^2) + active,data = hp)
+summary(mod2)
+#Report the adjusted R^2 value for mod2.
+#adjusted R-squared = 0.4371
+
+
+mod3 <- lm(price ~ size + lot + bath + bed + age + garage + bath:bed + I(age^2) + I(elem == "harris") + I(elem == "edison") + active, data = hp)
+summary(mod3)
+#Report the adjusted R^2 value for mod3.
+#adjusted r-squared = 0.4661
+
+
+
+anova(mod2, mod3)
+#Does your p-value agree with the one presented in the article? Interpret this test.
+# f:0.4865 pr(>f)0.6929
+# yes, This test is saying that if we remove the last three schools; Adams, Crest, and Park, then we can increase the adjusted R^2 and reduce the RSE. Basically, the model performs better without those three schools.  
+
+
+
+#Use mod3 to create a 95% prediction interval for a home with the following features: 1879 feet, lot size category 4, two and a half baths, three bedrooms, built in 1975, two-car garage, and near Parker Elementary School.
+predict(mod3, newdata = data.frame(size = 1.879, lot = 4, bath = 2.1, bed = 3, age = .05, garage = 2, active = 1, elem = "parker"), interval = "pred", level = .95)
+
+
+
+
+#calculate training mean square prediction error
+mean(mod.fs$residuals^2)
+mean(mod.be$residuals^2)
+mean(mod1$residuals^2)
+mean(mod2$residuals^2)
+mean(mod3$residuals^2)
+
+#Which model has the smallest training mean square prediction error? Do you think this model will also have the smallest test mean square prediction error?
+#mod2 has the smallest training mean squre prediction error.  I think this model's test mean squre prediction error will not be the smallest.
+
+```
+
+```{r}
+
+#Explain what each set of graphs is showing.
+
+#install.packages("effects")
+library(effects)
+plot(allEffects(mod2))
+#shows all the impact of each variables in mod2
+
+plot(effect("bath*bed", mod2))
+#explicitly shows the effect of bath*bed variable from mod2.
+
+plot(effect("bath*bed", mod2, xlevels=list(bed=2:5)))
+#explicitly shows the effect of bath*bed variable from mod2, but restricting the number of beds from 2 up to 5 beds. Each graph presents the modeling data for the corresponding number of baths.
+
+plot(effect("bath*bed", mod2, xlevels=list(bath=1:3)))
+#explicitly shows the effect of bath*bed variable from mod2, but restricting the number of beds up to 3 baths. Each graph presents the modeling data for the corresponding number of baths.
+
+
+```
+
+
