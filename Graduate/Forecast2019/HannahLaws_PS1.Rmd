@@ -1,0 +1,117 @@
+---
+title: 'Forecasting Time Series Models: Problem Set 1'
+author: "Hannah Laws"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+```{r, warning = FALSE, message = FALSE}
+library(fpp2) # You will always load this package before analyzing any time series data.
+```
+
+### Question 1: 
+Download the file `tute1.csv` from [http://robjhyndman.com/data/tute1.csv](http://robjhyndman.com/data/tute1.csv), open it in Excel (or some other spreadsheet application), and review its contents. You should find four columns of information. Columns B through D each contain a quarterly series, labelled Sales, AdBudget and GDP. Sales contains the quarterly sales for a small company over the period 1981-2005. AdBudget is the advertising budget and GDP is the gross domestic product. All series have been adjusted for inflation.
+
+a - You can read the data into R with the following script:
+```{r}
+tute1 <- read.csv("http://robjhyndman.com/data/tute1.csv", header=TRUE) 
+# Directly download file to R from internet. 
+
+# or you can read your file from your computer using read.csv function
+# tute1 <- read.csv("C:/Users/arifi/Downloads/tute1.csv")
+
+```
+
+b - Convert the data to time series
+```{r}
+mytimeseries <- ts(tute1[,-1], start=1981, frequency=4)
+# The [,-1] removes the first column which contains the quarters as we do not need them now.
+```
+
+c - Construct time series plots of each of the three series
+```{r, eval=TRUE}
+# You need to either delete or turn eval=TRUE for this code to be evaluated.
+autoplot(mytimeseries, facets=TRUE)
+```
+
+Check what happens when you do not include facets=TRUE.
+
+### Question 2: 
+
+Use the the following graphics functions: `autoplot`, `ggseasonplot`, `ggsubseriesplot`, `gglagplot`, `ggAcf` and explore features from the following time series: `hsales`, `usdeaths`, `bricksq`, `sunspotarea`, `gasoline`.
+
+```{r}
+# Replace this comment with R code to achieve the above tasks.
+# Hint: apply each function to each time series; autoplot(mydata), ggAcf(mydata2), etc.
+autoplot(hsales)
+ggseasonplot(hsales)
+ggsubseriesplot(hsales)
+gglagplot(hsales)
+ggAcf(hsales)
+
+
+```
+
+```{r}
+# Next graph goes here. 
+autoplot(usdeaths)
+ggseasonplot(usdeaths)
+ggsubseriesplot(usdeaths)
+gglagplot(usdeaths)
+ggAcf(usdeaths)
+```
+
+```{r}
+# Next graph goes here. Copy and paste for each additional graph.
+autoplot(bricksq)
+ggseasonplot(bricksq)
+ggsubseriesplot(bricksq)
+gglagplot(bricksq)
+ggAcf(bricksq)
+```
+
+```{r}
+# Next graph goes here. Copy and paste for each additional graph.
+autoplot(sunspotarea)
+ggseasonplot(sunspotarea)
+ggsubseriesplot(sunspotarea)
+gglagplot(sunspotarea)
+ggAcf(sunspotarea)
+```
+
+- For each series, can you spot any seasonality, cyclicity and trend?
+- What do you learn about the series?
+
+### Question 3: 
+
+`dj` contains 292 consecutive trading days of the Dow Jones Index. Use `ddj <- diff(dj)` to compute the daily changes in the index. Plot `ddj` and its ACF. Do the changes in the Dow Jones Index look like white noise?
+
+```{r}
+# Next R code goes here. Copy and paste for each additional code chunk.
+ddj <- diff(dj)
+ggAcf(ddj)
+```
+
+Considering that the lags do not exceed the base parameters, these changes in the Dow Jones Index look like white noise.
+
+### Question 4:
+
+The `pigs` data shows the monthly total number of pigs slaughtered in Victoria, Australia, from Jan 1980 to Aug 1995. Use `mypigs <- window(pigs, start=1990)` to select the data starting from 1990. Use `autoplot` `Ljung Box test`, and `ggAcf` for `mypigs` series and compare these to white noise plots from Figures `2.15` and `2.16` in the textbook.
+
+```{r}
+#  Next R code goes here. Copy and paste for each additional code chunk.
+mypigs <- window(pigs, start = 1990)
+autoplot(mypigs)
+Box.test(ts(mypigs),lag = 20, type = "Lj")
+ggAcf(mypigs)
+
+```
+
+## How to upload this file on AsUlearn?
+
+When you are ready to upload this assignment
+
+- Click dropdown menu from `Knit`.
+- Then click `Knit to HTML`.
+- Open the pop-up file and click `Open in Browser`.
+- Press the `ctrl+S`.
+- Save the file as `YourName_PS1`.
+- Upload `YourName_PS1` to `AsUlearn`. 
