@@ -1,0 +1,103 @@
+library(stringr)
+library(plyr)
+
+getwd()
+
+#creates directory to store CSV files
+dir.create("GuilfordProject2019")
+setwd("GuilfordProject2019")
+
+
+#reading in the callsForServiceUpdated file, the file path will be different depending on where this file is located on your machine.
+callData<-read.csv("C:\\Users\\lawsh\\Dropbox\\app_public_safety\\callsForServiceUpdated.csv")
+
+#renaming so we don't have to upload the file in to the R environment
+#we only need to do this while experimenting with data cleaning techniques
+callData1<-callData
+
+
+
+
+#splits the calltime and timeclose columns into date and time columns. In this process, the "T" and "Z" are removed. 
+#The calltime and timeclose variables are also removed since these were separated into different columns: date_Open, time_Open, date_Close, time_Close.
+#These columns are then reordered to match where calltime and timeclose use to be.
+
+#splitting columns and removing "T" and "Z"
+callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$calltime, "T",2)))
+callData1[,44]<-gsub("Z","",callData1[,44])
+
+callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$timeclose, "T",2)))
+callData1[,46]<-gsub("Z","",callData1[,46])
+
+
+#removing calltime and time close columns
+callData1<-callData1[,c(-4,-26)]
+
+#renaming new columns
+names(callData1)[41]<-"date_Open"
+names(callData1)[42]<-"time_Open"
+names(callData1)[43]<-"date_Close"
+names(callData1)[44]<-"time_Close"
+
+#reordering columns
+callData1<-callData1[,c(1:3,41,42,4:24,43,44,25:40)]
+
+
+#gertrude
+
+
+#finds all the records that have at least one NA and stores into a dataframe named missingVal for further evaluation/instruction.
+#first, target which columns to focus on for missing data because variables like parent_ID will have many NA's but does not hinder the process of creating a prediction model.
+
+
+#changing all NULL or empty values to NA for easier detection
+callData1[callData1==""]<-NA
+
+
+#observed that cancelled column has 4 factors, False, FALSE, True, TRUE. Changing to only FALSE and TRUE
+table(callData1$cancelled)
+callData1[,25]<-gsub("False","FALSE",callData1[,25])
+callData1[,25]<-gsub("True","TRUE",callData1[,25])
+colnames(callData1)
+
+#noticed UNKNOWN PROBLEM MAN DOWN    UNKNOWN PROBLEM PERSON DOWN as two separate situations. Need clarification before combining.
+table(callData1$nature)
+
+
+
+#looking to find where there are NA's in the entire dataset
+colSums(is.na(callData1))
+
+#variables to ignore: ***these have an overwhelming amount of NA's which means either procedures need to change, or these variables are not going to hinder model creation.***
+#parent_id, case_id, nature2, meddislvl,district, statbeat, ra, gp, primeunit,firstdisp
+
+#variables to focus on: ***these variables have a relatively smaller number of NA's which could be reason to delete or alter said data points.
+#callsource,street,city,streetonly,nature,priority,service,closedcode
+#corresponding column numbers: 6,7,8,9,12,14,18,26
+
+#collecting all the records where the columns have NA in the aforementioned focus column groups.
+missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:9,12,14,18,26)], function (x) which (is.na (x))))),]
+
+
+
+
+
+##################################################################
+#separate data by agency
+GCSD<-as.data.frame(subset(callData1,callData1$agency=="GCSD"))
+ACO<-as.data.frame(subset(callData1,callData1$agency=="ACO"))
+EMS<-as.data.frame(subset(callData1,callData1$agency=="EMS"))
+GCF<-as.data.frame(subset(callData1,callData1$agency=="GCF"))
+
+#saving those into separate CSV files
+write.csv(agency,file = "GuilfordProject2019\\GCSD.csv")
+write.csv(agency,file = "GuilfordProject2019\\ACO.csv")
+write.csv(agency,file = "GuilfordProject2019\\EMS.csv")
+write.csv(agency,file = "GuilfordProject2019\\GCF.csv")
+
+
+
+
+
+
+
