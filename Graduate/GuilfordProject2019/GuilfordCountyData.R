@@ -1,15 +1,16 @@
 library(stringr)
 library(plyr)
 
+setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+
 getwd()
 
 #creates directory to store CSV files
-dir.create("GuilfordProject2019")
-setwd("GuilfordProject2019")
+dir.create("GuilfordProject2019_CSV")
 
 
 #reading in the callsForServiceUpdated file, the file path will be different depending on where this file is located on your machine.
-callData<-read.csv("C:\\Users\\lawsh\\Dropbox\\app_public_safety\\callsForServiceUpdated.csv")
+callData<-read.csv("callsForServiceUpdated.csv")
 
 #renaming so we don't have to upload the file in to the R environment
 #we only need to do this while experimenting with data cleaning techniques
@@ -61,12 +62,16 @@ callData1[,25]<-gsub("True","TRUE",callData1[,25])
 colnames(callData1)
 
 #noticed UNKNOWN PROBLEM MAN DOWN    UNKNOWN PROBLEM PERSON DOWN as two separate situations. Need clarification before combining.
-table(callData1$nature)
+sort(unique(callData1$nature))
+#difference between Diorder Family and Disorder family GPD ONLY?
+#difference between hazmat and hazmat - fire only?
+
+
 
 
 
 #looking to find where there are NA's in the entire dataset
-colSums(is.na(callData1))
+sort(colSums(is.na(callData1)))
 
 #variables to ignore: ***these have an overwhelming amount of NA's which means either procedures need to change, or these variables are not going to hinder model creation.***
 #parent_id, case_id, nature2, meddislvl,district, statbeat, ra, gp, primeunit,firstdisp
@@ -90,10 +95,10 @@ EMS<-as.data.frame(subset(callData1,callData1$agency=="EMS"))
 GCF<-as.data.frame(subset(callData1,callData1$agency=="GCF"))
 
 #saving those into separate CSV files
-write.csv(agency,file = "GuilfordProject2019\\GCSD.csv")
-write.csv(agency,file = "GuilfordProject2019\\ACO.csv")
-write.csv(agency,file = "GuilfordProject2019\\EMS.csv")
-write.csv(agency,file = "GuilfordProject2019\\GCF.csv")
+write.csv(GCSD,file = "GuilfordProject2019_CSV/GCSD.csv")
+write.csv(ACO,file = "GuilfordProject2019_CSV/ACO.csv")
+write.csv(EMS,file = "GuilfordProject2019_CSV/EMS.csv")
+write.csv(GCF,file = "GuilfordProject2019_CSV/GCF.csv")
 
 
 
