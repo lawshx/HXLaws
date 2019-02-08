@@ -1,6 +1,5 @@
 library(stringr)
 library(plyr)
-library(fpp2)
 
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
@@ -96,27 +95,45 @@ missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:9,12,14,18,26)], fu
 
 
 #######TRYING SOMETHING OUT to convert old categories in NATURE to new categories.
-callData2<-ts(as.matrix(callData1[,c(1,4,5,12)])) #turning callData into a time series to find variables that need to be combined.
-
 
 NATURE<-as.data.frame(unique(callData1$nature))
 
-TheDates<-data.frame(1,max(as.Date(dd$date_Open)),min(as.Date(dd$date_Open)))
-TheDates[2]<-as.Date(TheDates[2])
+TheDates<-data.frame(1,min(as.Date(callData1$date_Open)[1]),max(as.Date(callData1$date_Open)[1]))
 names(TheDates)<-c("Nature","Start","End")
 
 for (i in 1:dim(NATURE)[1]){
   a<-NATURE[i,]
   dd<-subset(callData1, callData1$nature==a)
-  ee<-data.frame(a,max(as.Date(dd$date_Open)),min(as.Date(dd$date_Open)))
+  ee<-data.frame(a,min(as.Date(dd$date_Open)),max(as.Date(dd$date_Open)))
   names(ee)<-names(TheDates)
   TheDates<-rbind(TheDates, ee)
   
 }
 
+
+#Comparing suspected old and new categories
 TheDates[which(grepl("unknown.*problem",ignore.case = TRUE,TheDates$Nature)),]
 TheDates[which(grepl("family",ignore.case = TRUE,TheDates$Nature)),]
-TheDates[which(grepl("fire",ignore.case = TRUE,TheDates$Nature)),]
+
+
+callData2<-callData1
+#Converting old categories to new
+callData2$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
+callData2$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData2$nature)
+
+
+#double checking to see if substitutions where made.
+pp<-as.data.frame(plyr::count(callData2$nature))
+pp[which(grepl("family",ignore.case = T, pp[,1])),]
+pp[which(grepl("unknown.*problem",ignore.case = T, pp[,1])),]
+
+
+plyr::count(as.Date(TheDates$Start))
+plyr::count(as.Date(TheDates$End))
+
+
+#A way to subset Nature Categories that start at a specific date.
+subset(TheDates, TheDates$End < as.Date.character("2017-01-01"))
 
 
 ##################################################################
