@@ -1,5 +1,6 @@
 library(stringr)
 library(plyr)
+library(fpp2)
 
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
@@ -59,7 +60,14 @@ callData1[callData1==""]<-NA
 table(callData1$cancelled)
 callData1[,25]<-gsub("False","FALSE",callData1[,25])
 callData1[,25]<-gsub("True","TRUE",callData1[,25])
-colnames(callData1)
+# colnames(callData1)
+
+#Deleting columns gp, ra, and meddilvl
+callData1<-callData1[,-c(16,22,23)]
+
+#Eliminating all records where call cancelled is TRUE.
+callData1<-callData1[-which(callData1$cancelled==TRUE),]
+
 
 #noticed UNKNOWN PROBLEM MAN DOWN    UNKNOWN PROBLEM PERSON DOWN as two separate situations. Need clarification before combining.
 sort(unique(callData1$nature))
@@ -85,6 +93,22 @@ missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:9,12,14,18,26)], fu
 
 
 
+
+
+#######TRYING SOMETHING OUT to convert old categories in NATURE to new categories.
+callData2<-ts(as.matrix(callData1[,c(1,4,5,12)])) #turning callData into a time series to find variables that need to be combined.
+
+
+NATURE<-as.data.frame(unique(callData1$nature))
+
+TheDates<-callData1[1,c(4,5,12)]
+
+for (i in 1:length(callData1)){
+  a<-NATURE[i,]
+  dd<-subset(callData1, callData1$nature==a)
+  
+  
+}
 
 
 ##################################################################
