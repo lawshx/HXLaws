@@ -101,14 +101,22 @@ callData2<-ts(as.matrix(callData1[,c(1,4,5,12)])) #turning callData into a time 
 
 NATURE<-as.data.frame(unique(callData1$nature))
 
-TheDates<-callData1[1,c(4,5,12)]
+TheDates<-data.frame(1,max(as.Date(dd$date_Open)),min(as.Date(dd$date_Open)))
+TheDates[2]<-as.Date(TheDates[2])
+names(TheDates)<-c("Nature","Start","End")
 
-for (i in 1:length(callData1)){
+for (i in 1:dim(NATURE)[1]){
   a<-NATURE[i,]
   dd<-subset(callData1, callData1$nature==a)
-  
+  ee<-data.frame(a,max(as.Date(dd$date_Open)),min(as.Date(dd$date_Open)))
+  names(ee)<-names(TheDates)
+  TheDates<-rbind(TheDates, ee)
   
 }
+
+TheDates[which(grepl("unknown.*problem",ignore.case = TRUE,TheDates$Nature)),]
+TheDates[which(grepl("family",ignore.case = TRUE,TheDates$Nature)),]
+TheDates[which(grepl("fire",ignore.case = TRUE,TheDates$Nature)),]
 
 
 ##################################################################
