@@ -1,0 +1,56 @@
+---
+title: 'Forecasting Time Series Models: Problem Set 2'
+author: "Your name goes here"
+date: "Due: Feb 17, 2019"
+---
+```{r, warning = FALSE, message = FALSE}
+library(fpp2) # You will always load this package before analyzing any time series data.
+```
+
+### Question 1: 
+
+Calculate the residuals from a seasonal naive forecast applied to the quarterly Australian beer production data from 1992. The following code will help.
+
+```{r, eval=FALSE} 
+# You need to turn eval=TRUE for the code to be evaluated.
+beer <- window(ausbeer, start=1992) 
+fc_beer <- beer %>% 
+  snaive()    # Use seasonal naive method to forcaste the beer production
+
+fc_beer %>%
+  autoplot()  # Plot seasonal naive forecasts
+
+res <- fc_beer %>%
+  residuals() # Compute residuals of beer data set obtained from seasonal naive method 
+  
+autoplot(res) # Plot residuals
+```
+
+
+Test if the residuals are white noise and normally distributed.
+```{r} 
+# Your R code goes here
+```
+    Q: What do you conclude?
+    Your comments go here.
+
+
+### Question 2:
+Consider the daily closing IBM stock prices (data set `ibmclose`).
+
+- What is this data about? (hint: you can use `?ibmclose`)
+- Produce some plots of the data in order to become familiar with it.
+- Split the data into a training set of 300 observations and a test set of 69 observations.
+- Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
+- Check the residuals of your preferred method. Do they resemble white noise?
+
+### Question 3:
+Consider the sales of new one-family houses in the USA, Jan 1973 to Nov 1995 (data set `hsales`)
+
+- What is this data about? 
+- Produce some plots of the data in order to become familiar with it.
+- Split the `hsales` data set into a training set and a test set, where the test set is the last two years of data.
+- Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
+- Check the residuals of your preferred method. Do they resemble white noise?
+
+
