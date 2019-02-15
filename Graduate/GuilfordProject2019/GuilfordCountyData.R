@@ -76,25 +76,7 @@ sort(unique(callData1$nature))
 
 
 
-
-#looking to find where there are NA's in the entire dataset
-sort(colSums(is.na(callData1)))
-
-#variables to ignore: ***these have an overwhelming amount of NA's which means either procedures need to change, or these variables are not going to hinder model creation.***
-#parent_id, case_id, nature2, meddislvl,district, statbeat, ra, gp, primeunit,firstdisp
-
-#variables to focus on: ***these variables have a relatively smaller number of NA's which could be reason to delete or alter said data points.
-#callsource,street,city,streetonly,nature,priority,service,closedcode
-#corresponding column numbers: 6,7,8,9,12,14,18,26
-
-#collecting all the records where the columns have NA in the aforementioned focus column groups.
-missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:9,12,14,18,26)], function (x) which (is.na (x))))),]
-
-
-
-
-
-#######TRYING SOMETHING OUT to convert old categories in NATURE to new categories.
+#######Convert old categories in NATURE to new categories#################
 
 NATURE<-as.data.frame(unique(callData1$nature))
 
@@ -110,30 +92,66 @@ for (i in 1:dim(NATURE)[1]){
   
 }
 
-
 #Comparing suspected old and new categories
 TheDates[which(grepl("unknown.*problem",ignore.case = TRUE,TheDates$Nature)),]
 TheDates[which(grepl("family",ignore.case = TRUE,TheDates$Nature)),]
 
 
-callData2<-callData1
 #Converting old categories to new
-callData2$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
-callData2$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData2$nature)
+callData1$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
+callData1$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData1$nature)
 
-
-#double checking to see if substitutions where made.
-pp<-as.data.frame(plyr::count(callData2$nature))
-pp[which(grepl("family",ignore.case = T, pp[,1])),]
-pp[which(grepl("unknown.*problem",ignore.case = T, pp[,1])),]
+# 
+# #double checking to see if substitutions where made.
+# pp<-as.data.frame(plyr::count(callData1$nature))
+# pp[which(grepl("family",ignore.case = T, pp[,1])),]
+# pp[which(grepl("unknown.*problem",ignore.case = T, pp[,1])),]
 
 
 plyr::count(as.Date(TheDates$Start))
 plyr::count(as.Date(TheDates$End))
 
 
-#A way to subset Nature Categories that start at a specific date.
-subset(TheDates, TheDates$End < as.Date.character("2017-01-01"))
+#A way to subset Nature Categories with a specific amount of time used.
+subset(TheDates, abs(TheDates$End - TheDates$Start) < (365*2))
+
+
+
+#############interesting finds, advise before making changes.##############################
+TheDates[which(grepl("active",ignore.case = TRUE,TheDates$Nature)),]
+TheDates[which(grepl("911 unknown",ignore.case = TRUE,TheDates$Nature)),] #should there be a difference between 911 unknown and cellular 911 unknown?
+TheDates[which(grepl("alarms",ignore.case = TRUE,TheDates$Nature)),] #difference between the two? They are used just about the same amount of time.
+#still need clarification on hazmat and hazmat-fire only, there is a about a 2 month gap between them.
+
+
+
+
+#some of the streetonly missing values are actual streets just not filled in, others are highways of stations.
+#does this need to be fixed in order to proceed with prediction model?
+missingstreets<-subset(callData1,is.na(callData1$streetonly))
+
+
+
+
+##########Looking for Missing Values###############
+sort(colSums(is.na(callData1)))
+
+#variables to ignore: ***these have an overwhelming amount of NA's which means either procedures need to change, or these variables are not going to hinder model creation.***
+#parent_id, case_id, nature2, meddislvl,district, statbeat, ra, gp, primeunit,firstdisp
+
+#variables to focus on: ***these variables have a relatively smaller number of NA's which could be reason to delete or alter said data points.
+#callsource,street,city,nature,priority,service,closedcode
+#we will ignore street only
+#corresponding column numbers: 6,7,8,12,14,17,23
+
+#collecting all the records where the columns have NA in the aforementioned focus column groups.
+missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:8,12,14,17,23)], function (x) which (is.na (x))))),]
+
+
+
+
+
+
 
 
 ##################################################################
