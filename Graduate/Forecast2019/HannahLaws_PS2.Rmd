@@ -1,56 +1,126 @@
 ---
 title: 'Forecasting Time Series Models: Problem Set 2'
-author: "Your name goes here"
-date: "Due: Feb 17, 2019"
+author: "Hannah Laws"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 ```{r, warning = FALSE, message = FALSE}
 library(fpp2) # You will always load this package before analyzing any time series data.
+library(forecast)
 ```
 
 ### Question 1: 
 
 Calculate the residuals from a seasonal naive forecast applied to the quarterly Australian beer production data from 1992. The following code will help.
 
-```{r, eval=FALSE} 
-# You need to turn eval=TRUE for the code to be evaluated.
+```{r, eval=TRUE} 
 beer <- window(ausbeer, start=1992) 
 fc_beer <- beer %>% 
-  snaive()    # Use seasonal naive method to forcaste the beer production
+  snaive()    
 
 fc_beer %>%
-  autoplot()  # Plot seasonal naive forecasts
+  autoplot()  
 
 res <- fc_beer %>%
-  residuals() # Compute residuals of beer data set obtained from seasonal naive method 
+  residuals() 
   
-autoplot(res) # Plot residuals
+autoplot(res) 
 ```
 
 
 Test if the residuals are white noise and normally distributed.
 ```{r} 
 # Your R code goes here
+checkresiduals(res)
 ```
     Q: What do you conclude?
-    Your comments go here.
+    When looking at the ACF graph, it would appear that there there is very little to no significance in the residuals. The histogram of the residuals also only vaguely resemble a left skewed distribution. Therefore, I believe that the residuals are white noise. From the plot of the Australian beer data, there appears to be no significant trends, seasonalities, or cyclical patterns.
 
 
 ### Question 2:
 Consider the daily closing IBM stock prices (data set `ibmclose`).
 
 - What is this data about? (hint: you can use `?ibmclose`)
+  This data is about the closing stock price of IBM taken daily.
 - Produce some plots of the data in order to become familiar with it.
+```{r}
+plot(ibmclose)
+hist(ibmclose)
+```
+
 - Split the data into a training set of 300 observations and a test set of 69 observations.
+```{r}
+set.seed(9)
+a<-sample.int(369,size = 300)
+trainset <- (ibmclose[a])
+testset<-(ibmclose[-a])
+```
+
 - Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
+```{r}
+avg_train<-trainset %>%
+  meanf(h=69)
+seas_train<-trainset %>%
+  snaive(h=69)
+naive_train<-trainset %>%
+  naive(h=69)
+drift_train<-trainset %>%
+  rwf(h=69, drift = TRUE)
+
+
+
+accuracy(avg_train,testset)
+accuracy(seas_train,testset)
+accuracy(naive_train,testset)
+accuracy(drift_train,testset)
+```
+
+After testing all the benchmark methods, it would seem that average method did the best seeing that the RMSE is the lowest in both the training and test set.
+
 - Check the residuals of your preferred method. Do they resemble white noise?
+```{r}
+train_res<-residuals(avg_train)
+autoplot(ts(train_res))
+checkresiduals(train_res)
+```
+The ACF plot of the residuals shows no significance based on the calculated thresholds, therefore the residuals are white noise. The histogram does not show much of a normal distribution but it's hard to really tell because of the second peak.
 
 ### Question 3:
 Consider the sales of new one-family houses in the USA, Jan 1973 to Nov 1995 (data set `hsales`)
 
 - What is this data about? 
+  This data looks at the sales of new one-family houses in the USA on a monthly basis.
 - Produce some plots of the data in order to become familiar with it.
 - Split the `hsales` data set into a training set and a test set, where the test set is the last two years of data.
-- Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
-- Check the residuals of your preferred method. Do they resemble white noise?
+```{r}
+train_set<-hsales[1:250]
+test_set<-hsales[251:275]
+```
 
+- Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
+```{r}
+avg_train<-train_set %>%
+  meanf(h=25)
+seas_train<-train_set %>%
+  snaive(h=25)
+naive_train<-train_set %>%
+  naive(h=25)
+drift_train<-train_set %>%
+  rwf(h=25, drift = TRUE)
+
+
+
+accuracy(avg_train,test_set)
+accuracy(seas_train,test_set)
+accuracy(naive_train,test_set)
+accuracy(drift_train,test_set)
+```
+The drift method has the lowest RMSE values when comparing all the benchmark methods to the test set.
+
+- Check the residuals of your preferred method. Do they resemble white noise?
+```{r}
+train_res<-residuals(drift_train)
+autoplot(ts(train_res))
+checkresiduals(train_res)
+```
+THe residuals in the histogram look to have the shape of a normal distribution. The ACF plot also shows that the pattern in the residuals is seasonal with many of the lags peaking past the threshold. This does not seem to be white noise, so there is some information we are missing with the drift method. 
 
