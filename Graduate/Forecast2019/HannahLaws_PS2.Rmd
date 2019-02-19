@@ -49,10 +49,8 @@ hist(ibmclose)
 
 - Split the data into a training set of 300 observations and a test set of 69 observations.
 ```{r}
-set.seed(9)
-a<-sample.int(369,size = 300)
-trainset <- (ibmclose[a])
-testset<-(ibmclose[-a])
+trainset <- ts(ibmclose[1:300])
+testset<-ts(ibmclose[301:369], start = 301)
 ```
 
 - Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
@@ -66,6 +64,10 @@ naive_train<-trainset %>%
 drift_train<-trainset %>%
   rwf(h=69, drift = TRUE)
 
+autoplot(avg_train) + autolayer(testset)
+autoplot(seas_train) + autolayer(testset)
+autoplot(naive_train) + autolayer(testset)
+autoplot(drift_train) + autolayer(testset)
 
 
 accuracy(avg_train,testset)
@@ -78,9 +80,10 @@ After testing all the benchmark methods, it would seem that average method did t
 
 - Check the residuals of your preferred method. Do they resemble white noise?
 ```{r}
-train_res<-residuals(avg_train)
-autoplot(ts(train_res))
+train_res<-residuals(drift_train)
+autoplot((train_res))
 checkresiduals(train_res)
+Box.test(train_res,type = "Ljung-Box", lag = 25)
 ```
 The ACF plot of the residuals shows no significance based on the calculated thresholds, therefore the residuals are white noise. The histogram does not show much of a normal distribution but it's hard to really tell because of the second peak.
 
@@ -92,8 +95,8 @@ Consider the sales of new one-family houses in the USA, Jan 1973 to Nov 1995 (da
 - Produce some plots of the data in order to become familiar with it.
 - Split the `hsales` data set into a training set and a test set, where the test set is the last two years of data.
 ```{r}
-train_set<-hsales[1:250]
-test_set<-hsales[251:275]
+train_set<-ts(hsales[1:250])
+test_set<-ts(hsales[251:275],start = 251)
 ```
 
 - Try using various benchmark methods to forecast the training set and compare the results on the test set. Which method did best?
@@ -108,6 +111,10 @@ drift_train<-train_set %>%
   rwf(h=25, drift = TRUE)
 
 
+autoplot(avg_train) + autolayer(testset)
+autoplot(seas_train) + autolayer(testset)
+autoplot(naive_train) + autolayer(testset)
+autoplot(drift_train) + autolayer(testset)
 
 accuracy(avg_train,test_set)
 accuracy(seas_train,test_set)
@@ -121,6 +128,7 @@ The drift method has the lowest RMSE values when comparing all the benchmark met
 train_res<-residuals(drift_train)
 autoplot(ts(train_res))
 checkresiduals(train_res)
+Box.test(train_res, type = "Ljung-Box", lag = 25)
 ```
 THe residuals in the histogram look to have the shape of a normal distribution. The ACF plot also shows that the pattern in the residuals is seasonal with many of the lags peaking past the threshold. This does not seem to be white noise, so there is some information we are missing with the drift method. 
 
