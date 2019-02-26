@@ -125,6 +125,19 @@ TheDates[which(grepl("alarms",ignore.case = TRUE,TheDates$Nature)),] #difference
 
 
 
+#converting older categories to newer ones
+callData1$nature<-gsub("celluar 911 unknown","911 unknown",callData1$nature)
+
+
+
+#
+#
+#
+
+
+step(lm( ~. ,data = callData1), direction = "backwards")
+step(lm( ~. ,data = callData1), direction = "forwards")
+
 
 #some of the streetonly missing values are actual streets just not filled in, others are highways of stations.
 #does this need to be fixed in order to proceed with prediction model?
