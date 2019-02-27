@@ -126,7 +126,9 @@ TheDates[which(grepl("alarms",ignore.case = TRUE,TheDates$Nature)),] #difference
 
 
 #converting older categories to newer ones
-callData1$nature<-gsub("celluar 911 unknown","911 unknown",callData1$nature)
+callData1$nature<-gsub("CELLULAR 911 UNKNOWN","911 UNKNOWN",callData1$nature)
+callData1$nature<-gsub("ACTIVE SHOOTER ALARM","ACTIVE SHOOTER",callData1$nature)
+callData1$nature<-gsub("ALARMS","OTHER ALARMS / PANIC ALARMS",callData1$nature)
 
 
 
