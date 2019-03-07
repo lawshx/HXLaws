@@ -24,24 +24,18 @@ callData1<-callData
 #These columns are then reordered to match where calltime and timeclose use to be.
 
 #splitting columns and removing "T" and "Z"
-callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$calltime, "T",2)))
-callData1[,44]<-gsub("Z","",callData1[,44])
+# callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$calltime, "T",2)))
+callData1[,4]<-gsub("Z","",callData1[,4])
+callData1[,4]<-gsub("T"," ",callData1[,4])
 
-callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$timeclose, "T",2)))
-callData1[,46]<-gsub("Z","",callData1[,46])
+# callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$timeclose, "T",2)))
+callData1[,26]<-gsub("Z","",callData1[,26])
+callData1[,26]<-gsub("T"," ",callData1[,26])
 
-
-#removing calltime and time close columns
-callData1<-callData1[,c(-4,-26)]
 
 #renaming new columns
-names(callData1)[41]<-"date_Open"
-names(callData1)[42]<-"time_Open"
-names(callData1)[43]<-"date_Close"
-names(callData1)[44]<-"time_Close"
-
-#reordering columns
-callData1<-callData1[,c(1:3,41,42,4:24,43,44,25:40)]
+names(callData1)[4]<-"start_time"
+names(callData1)[26]<-"end_time"
 
 
 #gertrude
@@ -57,12 +51,12 @@ callData1[callData1==""]<-NA
 
 #observed that cancelled column has 4 factors, False, FALSE, True, TRUE. Changing to only FALSE and TRUE
 table(callData1$cancelled)
-callData1[,25]<-gsub("False","FALSE",callData1[,25])
-callData1[,25]<-gsub("True","TRUE",callData1[,25])
+callData1[,24]<-gsub("False","FALSE",callData1[,24])
+callData1[,24]<-gsub("True","TRUE",callData1[,24])
 # colnames(callData1)
 
 #Deleting columns gp, ra, and meddilvl
-callData1<-callData1[,-c(16,22,23)]
+callData1<-callData1[,-c(15,21,22)]
 
 #Eliminating all records where call cancelled is TRUE.
 callData1<-callData1[-which(callData1$cancelled==TRUE),]
@@ -80,13 +74,13 @@ sort(unique(callData1$nature))
 
 NATURE<-as.data.frame(unique(callData1$nature))
 
-TheDates<-data.frame(1,min(as.Date(callData1$date_Open)[1]),max(as.Date(callData1$date_Open)[1]))
+TheDates<-data.frame(1,min(as.Date(callData1$start_time)[1]),max(as.Date(callData1$start_time)[1]))
 names(TheDates)<-c("Nature","Start","End")
 
 for (i in 1:dim(NATURE)[1]){
   a<-NATURE[i,]
   dd<-subset(callData1, callData1$nature==a)
-  ee<-data.frame(a,min(as.Date(dd$date_Open)),max(as.Date(dd$date_Open)))
+  ee<-data.frame(a,min(as.Date(dd$start_time)),max(as.Date(dd$start_time)))
   names(ee)<-names(TheDates)
   TheDates<-rbind(TheDates, ee)
   
@@ -101,13 +95,14 @@ TheDates[which(grepl("family",ignore.case = TRUE,TheDates$Nature)),]
 callData1$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
 callData1$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData1$nature)
 
-# 
+
 # #double checking to see if substitutions where made.
 # pp<-as.data.frame(plyr::count(callData1$nature))
 # pp[which(grepl("family",ignore.case = T, pp[,1])),]
 # pp[which(grepl("unknown.*problem",ignore.case = T, pp[,1])),]
 
 
+#shows how often a date appears in dataset.
 plyr::count(as.Date(TheDates$Start))
 plyr::count(as.Date(TheDates$End))
 
@@ -130,15 +125,40 @@ callData1$nature<-gsub("CELLULAR 911 UNKNOWN","911 UNKNOWN",callData1$nature)
 callData1$nature<-gsub("ACTIVE SHOOTER ALARM","ACTIVE SHOOTER",callData1$nature)
 callData1$nature<-gsub("ALARMS","OTHER ALARMS / PANIC ALARMS",callData1$nature)
 
+#calculating time duration and dividing by 60 to convert the results to minutes.
+duration <- data.frame(difftime((callData1$end_time),(callData1$start_time))/60)
+
+#Combine duration with the dataset.
+callData1<-cbind(callData1,duration)
+names(callData1)[40]<-"duration"
+
+#looking at the negative durations
+callData1[which(duration < 0),c("start_time","end_time", "duration")]
+
+#deleting observation since time stamps are at least 3 years apart.
+callData1 <- callData1[,-931160]
 
 
+#keeps track of variables with negative durations before fixing.
+neg_times<-which(callData1$duration < 0)
+
+
+#switching start and end times so that the duration is positive
+
+for (i in 1:length(neg_times)) {
+  a <- callData1$start_time[neg_times[i]]
+  b <- callData1$end_time[neg_times[i]]
+  callData1$start_time[neg_times[i]] <- b
+  callData1$end_time[neg_times[i]] <- a
+  callData1$duration[neg_times[i]]<- difftime((callData1$end_time[neg_times[i]]),(callData1$start_time[neg_times[i]]))/60
+}
 #
 #
 #
 
-
-step(lm( ~. ,data = callData1), direction = "backwards")
-step(lm( ~. ,data = callData1), direction = "forwards")
+#regression models to be implimented.
+step(lm( duration ~. ,data = callData1), direction = "backwards")
+step(lm( duration ~. ,data = callData1), direction = "forwards")
 
 
 #some of the streetonly missing values are actual streets just not filled in, others are highways of stations.
