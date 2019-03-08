@@ -55,17 +55,14 @@ callData1[,24]<-gsub("False","FALSE",callData1[,24])
 callData1[,24]<-gsub("True","TRUE",callData1[,24])
 # colnames(callData1)
 
-#Deleting columns gp, ra, and meddilvl
+#Deleting columns gp, ra, and meddilvl because they have been deemed unimportant in creating a predictive model.
 callData1<-callData1[,-c(15,21,22)]
 
 #Eliminating all records where call cancelled is TRUE.
 callData1<-callData1[-which(callData1$cancelled==TRUE),]
 
-
-#noticed UNKNOWN PROBLEM MAN DOWN    UNKNOWN PROBLEM PERSON DOWN as two separate situations. Need clarification before combining.
+#Observed similar categories while looking through all within the data.
 sort(unique(callData1$nature))
-#difference between Diorder Family and Disorder family GPD ONLY?
-#difference between hazmat and hazmat - fire only?
 
 
 
@@ -74,7 +71,7 @@ sort(unique(callData1$nature))
 
 NATURE<-as.data.frame(unique(callData1$nature))
 
-TheDates<-data.frame(1,min(as.Date(callData1$start_time)[1]),max(as.Date(callData1$start_time)[1]))
+TheDates<-data.frame(1,as.Date.character("2017-01-01"),as.Date.character("2017-01-01"))
 names(TheDates)<-c("Nature","Start","End")
 
 for (i in 1:dim(NATURE)[1]){
@@ -83,23 +80,8 @@ for (i in 1:dim(NATURE)[1]){
   ee<-data.frame(a,min(as.Date(dd$start_time)),max(as.Date(dd$start_time)))
   names(ee)<-names(TheDates)
   TheDates<-rbind(TheDates, ee)
-  
 }
 
-#Comparing suspected old and new categories
-TheDates[which(grepl("unknown.*problem",ignore.case = TRUE,TheDates$Nature)),]
-TheDates[which(grepl("family",ignore.case = TRUE,TheDates$Nature)),]
-
-
-#Converting old categories to new
-callData1$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
-callData1$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData1$nature)
-
-
-# #double checking to see if substitutions where made.
-# pp<-as.data.frame(plyr::count(callData1$nature))
-# pp[which(grepl("family",ignore.case = T, pp[,1])),]
-# pp[which(grepl("unknown.*problem",ignore.case = T, pp[,1])),]
 
 
 #shows how often a date appears in dataset.
@@ -108,11 +90,14 @@ plyr::count(as.Date(TheDates$End))
 
 
 #A way to subset Nature Categories with a specific amount of time used.
+#This will help to find possible categories that may need to be switched out to newer categories.
 subset(TheDates, abs(TheDates$End - TheDates$Start) < (365*2))
 
 
 
 #############interesting finds, advise before making changes.##############################
+TheDates[which(grepl("unknown.*problem",ignore.case = TRUE,TheDates$Nature)),]
+TheDates[which(grepl("family",ignore.case = TRUE,TheDates$Nature)),]
 TheDates[which(grepl("active",ignore.case = TRUE,TheDates$Nature)),]
 TheDates[which(grepl("911 unknown",ignore.case = TRUE,TheDates$Nature)),] #should there be a difference between 911 unknown and cellular 911 unknown?
 TheDates[which(grepl("alarms",ignore.case = TRUE,TheDates$Nature)),] #difference between the two? They are used just about the same amount of time.
@@ -121,14 +106,19 @@ TheDates[which(grepl("alarms",ignore.case = TRUE,TheDates$Nature)),] #difference
 
 
 #converting older categories to newer ones
+callData1$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
+callData1$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData1$nature)
 callData1$nature<-gsub("CELLULAR 911 UNKNOWN","911 UNKNOWN",callData1$nature)
 callData1$nature<-gsub("ACTIVE SHOOTER ALARM","ACTIVE SHOOTER",callData1$nature)
 callData1$nature<-gsub("ALARMS","OTHER ALARMS / PANIC ALARMS",callData1$nature)
 
+
+
+
 #calculating time duration and dividing by 60 to convert the results to minutes.
 duration <- data.frame(difftime((callData1$end_time),(callData1$start_time))/60)
 
-#Combine duration with the dataset.
+#Combine duration with the dataset and keeping the variable name "duration".
 callData1<-cbind(callData1,duration)
 names(callData1)[40]<-"duration"
 
@@ -138,12 +128,12 @@ callData1[which(duration < 0),c("start_time","end_time", "duration")]
 #deleting observation since time stamps are at least 3 years apart.
 callData1 <- callData1[,-931160]
 
-
 #keeps track of variables with negative durations before fixing.
-neg_times<-which(callData1$duration < 0)
+neg_times <- which(callData1$duration < 0)
 
 
-#switching start and end times so that the duration is positive
+#many of the negative duration times where a mistake between the start and end times being switched.
+#solution: switching start and end times so that the duration is positive.
 
 for (i in 1:length(neg_times)) {
   a <- callData1$start_time[neg_times[i]]
@@ -152,18 +142,23 @@ for (i in 1:length(neg_times)) {
   callData1$end_time[neg_times[i]] <- a
   callData1$duration[neg_times[i]]<- difftime((callData1$end_time[neg_times[i]]),(callData1$start_time[neg_times[i]]))/60
 }
-#
-#
-#
 
-#regression models to be implimented.
-step(lm( duration ~. ,data = callData1), direction = "backwards")
-step(lm( duration ~. ,data = callData1), direction = "forwards")
+
+zero_times <- which(callData1$duration == 0) #there are over 3000 observations that have a call duration time of 0.
 
 
 #some of the streetonly missing values are actual streets just not filled in, others are highways of stations.
 #does this need to be fixed in order to proceed with prediction model?
-missingstreets<-subset(callData1,is.na(callData1$streetonly))
+missingstreets <- callData1[is.na(callData1$streetonly),c("street","streetonly")]
+
+#searching for which streets are soley highways
+missingstreets[which(grepl("hwy|i 40|i-40| us",ignore.case = TRUE,missingstreets$street)),]
+
+
+
+
+
+
 
 
 
@@ -181,6 +176,18 @@ sort(colSums(is.na(callData1)))
 
 #collecting all the records where the columns have NA in the aforementioned focus column groups.
 missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:8,12,14,17,23)], function (x) which (is.na (x))))),]
+
+
+
+
+
+
+#############################################MODELLING DATA###################################################### 
+# #regression models to be implimented.
+# step(lm( duration ~. ,data = callData1), direction = "backwards")
+# step(lm( duration ~. ,data = callData1), direction = "forwards")
+
+
 
 
 
