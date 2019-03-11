@@ -49,10 +49,11 @@ names(callData1)[26]<-"end_time"
 callData1[callData1==""]<-NA
 
 
-#observed that cancelled column has 4 factors, False, FALSE, True, TRUE. Changing to only FALSE and TRUE
-table(callData1$cancelled)
+#observed that cancelled and rptonly columns has 4 factors, False, FALSE, True, TRUE. Changing to only FALSE and TRUE
 callData1[,24]<-gsub("False","FALSE",callData1[,24])
 callData1[,24]<-gsub("True","TRUE",callData1[,24])
+callData1[,15]<-gsub("False","FALSE",callData1[,15])
+callData1[,15]<-gsub("True","TRUE",callData1[,15])
 # colnames(callData1)
 
 #Deleting columns gp, ra, and meddilvl because they have been deemed unimportant in creating a predictive model.
@@ -74,11 +75,10 @@ NATURE<-as.data.frame(unique(callData1$nature))
 TheDates<-data.frame(1,as.Date.character("2017-01-01"),as.Date.character("2017-01-01"))
 names(TheDates)<-c("Nature","Start","End")
 
-for (i in 1:dim(NATURE)[1]){
+for (i in 1:nrow(NATURE)){
   a<-NATURE[i,]
-  dd<-subset(callData1, callData1$nature==a)
-  ee<-data.frame(a,min(as.Date(dd$start_time)),max(as.Date(dd$start_time)))
-  names(ee)<-names(TheDates)
+  dd<-callData1[callData1$nature==a,"start_time"]
+  ee<-data.frame(Nature = a,Start = min(dd),End = max(dd))
   TheDates<-rbind(TheDates, ee)
 }
 
@@ -116,14 +116,13 @@ callData1$nature<-gsub("ALARMS","OTHER ALARMS / PANIC ALARMS",callData1$nature)
 
 
 #calculating time duration and dividing by 60 to convert the results to minutes.
-duration <- data.frame(difftime((callData1$end_time),(callData1$start_time))/60)
+dur <- data.frame(duration = difftime((callData1$end_time),(callData1$start_time))/60)
 
 #Combine duration with the dataset and keeping the variable name "duration".
-callData1<-cbind(callData1,duration)
-names(callData1)[40]<-"duration"
+callData1<-cbind(callData1,dur)
 
 #looking at the negative durations
-callData1[which(duration < 0),c("start_time","end_time", "duration")]
+callData1[which(callData1$duration < 0),c("start_time","end_time", "duration")]
 
 #deleting observation since time stamps are at least 3 years apart.
 callData1 <- callData1[,-931160]
@@ -145,6 +144,8 @@ for (i in 1:length(neg_times)) {
 
 
 zero_times <- which(callData1$duration == 0) #there are over 3000 observations that have a call duration time of 0.
+table(callData1[zero_times,"agency"]) # this shows that EMS has the most calls with zero duration
+# zz<-callData1[which(callData1[zero_times,]$agency=="EMS"),] #closer look into EMS calls with no duration.
 
 
 #some of the streetonly missing values are actual streets just not filled in, others are highways of stations.
@@ -154,8 +155,8 @@ missingstreets <- callData1[is.na(callData1$streetonly),c("street","streetonly")
 #searching for which streets are soley highways
 missingstreets[which(grepl("hwy|i 40|i-40| us",ignore.case = TRUE,missingstreets$street)),]
 
-
-
+#filling in streetonly variable with just the street names **needs editings**
+missingstreets$streetonly <- gsub("^[0-9]{1,5}\\s([^ ]*.*$)","\\1",missingstreets$street)
 
 
 
@@ -166,33 +167,55 @@ missingstreets[which(grepl("hwy|i 40|i-40| us",ignore.case = TRUE,missingstreets
 ##########Looking for Missing Values###############
 sort(colSums(is.na(callData1)))
 
+
+
 #variables to ignore: ***these have an overwhelming amount of NA's which means either procedures need to change, or these variables are not going to hinder model creation.***
 #parent_id, case_id, nature2, meddislvl,district, statbeat, ra, gp, primeunit,firstdisp
 
 #variables to focus on: ***these variables have a relatively smaller number of NA's which could be reason to delete or alter said data points.
 #callsource,street,city,nature,priority,service,closedcode
 #we will ignore street only
-#corresponding column numbers: 6,7,8,12,14,17,23
+#corresponding column numbers: 5,6,7,11,13,16,22
 
 #collecting all the records where the columns have NA in the aforementioned focus column groups.
-missingVal<-callData1[unique (unlist (lapply (callData1[,c(6:8,12,14,17,23)], function (x) which (is.na (x))))),]
+missingVal<-callData1[unique (unlist (lapply (callData1[,c(5,6,7,11,13,16,22)], function (x) which (is.na (x))))),]
+
+
+#gaining a better understanding of which departments have the most missing values.
+colSums(is.na(callData1[which(callData1$agency=="ACO"),c(5,6,7,11,13,16,22)]))
+colSums(is.na(callData1[which(callData1$agency=="EMS"),c(5,6,7,11,13,16,22)]))
+colSums(is.na(callData1[which(callData1$agency=="GCF"),c(5,6,7,11,13,16,22)]))
+colSums(is.na(callData1[which(callData1$agency=="GCSD"),c(5,6,7,11,13,16,22)]))
 
 
 
 
-
+as.factor(callData1$agency)
+as.factor(callData1$callsource)
+as.factor(callData1$city)
+as.factor(callData1$streetonly)
+as.factor(callData1$nature)
+as.factor(callData1$nature2)
+as.factor(callData1$priority)
+as.factor(callData1$medprior)
+as.factor(callData1$rptonly)
+as.factor(callData1$service)
+as.factor(callData1$district)
+as.factor(callData1$statbeat)
+as.factor(callData1$primeunit)
+as.factor(callData1$closecode)
 
 #############################################MODELLING DATA###################################################### 
 # #regression models to be implimented.
-# step(lm( duration ~. ,data = callData1), direction = "backwards")
-# step(lm( duration ~. ,data = callData1), direction = "forwards")
+# step(lm( duration ~ agency + callsource + city + streetonly + nature + nature2 + priority + medprior + rptonly + service + district + statbeat + primeunit + closecode + long + lat,data = callData1), direction = "backwards")
+# step(lm( duration ~ agency + callsource + city + streetonly + nature + nature2 + priority + medprior + rptonly + service + district + statbeat + primeunit + closecode + long + lat,data = callData1), direction = "forward")
 
 
 
 
-
-
-
+callData1$duration <- as.numeric(callData1$duration)
+mod<-lm(duration ~ agency, data = callData1)
+summary(mod)
 
 
 
