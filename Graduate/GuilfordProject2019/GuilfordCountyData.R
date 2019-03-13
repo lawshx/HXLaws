@@ -6,7 +6,7 @@ setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 getwd()
 
 #creates directory to store CSV files
-dir.create("GuilfordProject2019_CSV")
+# dir.create("GuilfordProject2019_CSV")
 
 
 #reading in the callsForServiceUpdated file, the file path will be different depending on where this file is located on your machine.
@@ -18,43 +18,27 @@ callData1<-callData
 
 
 
-
-#splits the calltime and timeclose columns into date and time columns. In this process, the "T" and "Z" are removed. 
-#The calltime and timeclose variables are also removed since these were separated into different columns: date_Open, time_Open, date_Close, time_Close.
-#These columns are then reordered to match where calltime and timeclose use to be.
-
-#splitting columns and removing "T" and "Z"
-# callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$calltime, "T",2)))
+#Removes the Z and T in the calltime and timeclose variables
 callData1[,4]<-gsub("Z","",callData1[,4])
 callData1[,4]<-gsub("T"," ",callData1[,4])
 
-# callData1<-cbind(callData1,as.data.frame(str_split_fixed(callData$timeclose, "T",2)))
 callData1[,26]<-gsub("Z","",callData1[,26])
 callData1[,26]<-gsub("T"," ",callData1[,26])
 
 
-#renaming new columns
+#renaming columns
 names(callData1)[4]<-"start_time"
 names(callData1)[26]<-"end_time"
-
-
-#gertrude
-
-
-#finds all the records that have at least one NA and stores into a dataframe named missingVal for further evaluation/instruction.
-#first, target which columns to focus on for missing data because variables like parent_ID will have many NA's but does not hinder the process of creating a prediction model.
 
 
 #changing all NULL or empty values to NA for easier detection
 callData1[callData1==""]<-NA
 
 
-#observed that cancelled and rptonly columns has 4 factors, False, FALSE, True, TRUE. Changing to only FALSE and TRUE
-callData1[,24]<-gsub("False","FALSE",callData1[,24])
-callData1[,24]<-gsub("True","TRUE",callData1[,24])
-callData1[,15]<-gsub("False","FALSE",callData1[,15])
-callData1[,15]<-gsub("True","TRUE",callData1[,15])
-# colnames(callData1)
+#observed that cancelled and rptonly columns has 4 factors, False, FALSE, True, TRUE. Changing to boolean TRUE and FALSE
+callData1$cancelled <- as.logical(callData1$cancelled)
+callData1$rptonly <- as.logical(callData1$rptonly)
+
 
 #Deleting columns gp, ra, and meddilvl because they have been deemed unimportant in creating a predictive model.
 callData1<-callData1[,-c(15,21,22)]
@@ -70,10 +54,9 @@ sort(unique(callData1$nature))
 
 #######Convert old categories in NATURE to new categories#################
 
-NATURE<-as.data.frame(unique(callData1$nature))
+NATURE<-data.frame(unique(callData1$nature))
 
-TheDates<-data.frame(1,as.Date.character("2017-01-01"),as.Date.character("2017-01-01"))
-names(TheDates)<-c("Nature","Start","End")
+TheDates<-data.frame(Nature = 1,Start = as.Date.character("2017-01-01"),End = as.Date.character("2017-01-01"))
 
 for (i in 1:nrow(NATURE)){
   a<-NATURE[i,]
@@ -181,6 +164,7 @@ sort(colSums(is.na(callData1)))
 missingVal<-callData1[unique (unlist (lapply (callData1[,c(5,6,7,11,13,16,22)], function (x) which (is.na (x))))),]
 
 
+
 #gaining a better understanding of which departments have the most missing values.
 colSums(is.na(callData1[which(callData1$agency=="ACO"),c(5,6,7,11,13,16,22)]))
 colSums(is.na(callData1[which(callData1$agency=="EMS"),c(5,6,7,11,13,16,22)]))
@@ -189,33 +173,39 @@ colSums(is.na(callData1[which(callData1$agency=="GCSD"),c(5,6,7,11,13,16,22)]))
 
 
 
-
-as.factor(callData1$agency)
-as.factor(callData1$callsource)
-as.factor(callData1$city)
-as.factor(callData1$streetonly)
-as.factor(callData1$nature)
-as.factor(callData1$nature2)
-as.factor(callData1$priority)
-as.factor(callData1$medprior)
-as.factor(callData1$rptonly)
-as.factor(callData1$service)
-as.factor(callData1$district)
-as.factor(callData1$statbeat)
-as.factor(callData1$primeunit)
-as.factor(callData1$closecode)
+# #suggestions on what to factorize...essentailly what will need dummy variables.
+# as.factor(callData1$agency)
+# as.factor(callData1$callsource)
+# as.factor(callData1$city)
+# as.factor(callData1$streetonly)
+# as.factor(callData1$nature)
+# as.factor(callData1$nature2)
+# as.factor(callData1$priority)
+# as.factor(callData1$medprior)
+# as.factor(callData1$rptonly)
+# as.factor(callData1$service)
+# as.factor(callData1$district)
+# as.factor(callData1$statbeat)
+# as.factor(callData1$primeunit)
+# as.factor(callData1$closecode)
 
 #############################################MODELLING DATA###################################################### 
 # #regression models to be implimented.
+# #NOTE: Trying to run these models took too long.
 # step(lm( duration ~ agency + callsource + city + streetonly + nature + nature2 + priority + medprior + rptonly + service + district + statbeat + primeunit + closecode + long + lat,data = callData1), direction = "backwards")
 # step(lm( duration ~ agency + callsource + city + streetonly + nature + nature2 + priority + medprior + rptonly + service + district + statbeat + primeunit + closecode + long + lat,data = callData1), direction = "forward")
 
 
 
-
+#duration needs to be converted to a number instead of the difference between two times in order to analyze it.
 callData1$duration <- as.numeric(callData1$duration)
-mod<-lm(duration ~ agency, data = callData1)
-summary(mod)
+
+
+
+
+
+
+
 
 
 
