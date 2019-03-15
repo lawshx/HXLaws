@@ -1,0 +1,35 @@
+---
+title: 'Forecasting Time Series Models: Problem Set 3'
+subtitle: "Linear regression models"
+author: "Your name/s here"
+date: "Date: "
+---
+```{r, warning = FALSE, message = FALSE}
+library(fpp2) # You will always load this package before analyzing any time series data.
+```
+
+### Question: 
+
+You own a shop that sells gifts, souvenirs, and novelties. The shop, opened in January 1987, is situated on the wharf at a beach resort town in Queensland, Australia. The sales volume varies with the seasonal population of tourists. There is a massive influx of visitors to the town at Christmas and for the local surfing festival, held every March since 1988. 
+
+You are interested in expanding the premises, the range of products, and staff overtime. To extend your business, you need to forecast future sales.
+The data set `fancy` concerns the monthly sales figures for this shop.
+
+1- Produce a time plot of the data and describe the patterns in the graph. Identify any unusual or unexpected fluctuations in the time series.
+
+2- Explain why it is necessary to take logarithms of these data before fitting a model.
+
+3- Use R to fit a regression model to the logarithms of these sales data with a linear trend, seasonal dummies and a *surfing festival* dummy variable.
+
+4- Plot the residuals against time and against the fitted values. Do these plots reveal any problems with the model?
+
+5- Do boxplots of the residuals for each month. Does this reveal any problems with the model?
+
+6- What do the values of the coefficients tell you about each variable?
+
+7- What does the Breusch-Godfrey test tell you about your model?
+
+8- Regardless of your answers to the above questions, use a regression model to predict the monthly sales for 1994, 1995, and 1996. Produce prediction intervals for each of your forecasts.
+
+9- How could you improve these predictions by modifying the model?
+

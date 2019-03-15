@@ -1,3 +1,4 @@
+ptm <- proc.time() #timing how long it takes to run the cleaning process of the script.
 library(stringr)
 library(plyr)
 
@@ -8,14 +9,12 @@ getwd()
 #creates directory to store CSV files
 # dir.create("GuilfordProject2019_CSV")
 
-
 #reading in the callsForServiceUpdated file, the file path will be different depending on where this file is located on your machine.
 callData<-read.csv("callsForServiceUpdated.csv")
 
 #renaming so we don't have to upload the file in to the R environment
 #we only need to do this while experimenting with data cleaning techniques
 callData1<-callData
-
 
 
 #Removes the Z and T in the calltime and timeclose variables
@@ -40,16 +39,15 @@ callData1$cancelled <- as.logical(callData1$cancelled)
 callData1$rptonly <- as.logical(callData1$rptonly)
 
 
-#Deleting columns gp, ra, and meddilvl because they have been deemed unimportant in creating a predictive model.
-callData1<-callData1[,-c(15,21,22)]
+#Deleting columns gp, ra, statbeat, geox,geoy, and meddilvl because they have been deemed unimportant in creating a predictive model.
+callData1<-callData1[,-c(9,10,15,20,21,22)]
 
 #Eliminating all records where call cancelled is TRUE.
 callData1<-callData1[-which(callData1$cancelled==TRUE),]
+callData1<-callData1[-which(callData1$rptonly==TRUE),]
 
 #Observed similar categories while looking through all within the data.
 sort(unique(callData1$nature))
-
-
 
 
 #######Convert old categories in NATURE to new categories#################
@@ -64,7 +62,6 @@ for (i in 1:nrow(NATURE)){
   ee<-data.frame(Nature = a,Start = min(dd),End = max(dd))
   TheDates<-rbind(TheDates, ee)
 }
-
 
 
 #shows how often a date appears in dataset.
@@ -87,15 +84,12 @@ TheDates[which(grepl("alarms",ignore.case = TRUE,TheDates$Nature)),] #difference
 #still need clarification on hazmat and hazmat-fire only, there is a about a 2 month gap between them.
 
 
-
 #converting older categories to newer ones
 callData1$nature<-gsub("UNKNOWN PROBLEM MAN DOWN","UNKNOWN PROBLEM PERSON DOWN",callData1$nature)
 callData1$nature<-gsub("DISORDER FAMILY - GPD ONLY","DISORDER FAMILY",callData1$nature)
 callData1$nature<-gsub("CELLULAR 911 UNKNOWN","911 UNKNOWN",callData1$nature)
 callData1$nature<-gsub("ACTIVE SHOOTER ALARM","ACTIVE SHOOTER",callData1$nature)
 callData1$nature<-gsub("ALARMS","OTHER ALARMS / PANIC ALARMS",callData1$nature)
-
-
 
 
 #calculating time duration and dividing by 60 to convert the results to minutes.
@@ -125,32 +119,16 @@ for (i in 1:length(neg_times)) {
   callData1$duration[neg_times[i]]<- difftime((callData1$end_time[neg_times[i]]),(callData1$start_time[neg_times[i]]))/60
 }
 
-
 zero_times <- which(callData1$duration == 0) #there are over 3000 observations that have a call duration time of 0.
-table(callData1[zero_times,"agency"]) # this shows that EMS has the most calls with zero duration
-# zz<-callData1[which(callData1[zero_times,]$agency=="EMS"),] #closer look into EMS calls with no duration.
+table(callData1[zero_times,c("agency","duration")]) # this shows that EMS has the most calls with zero duration
 
+zeroos<-callData1[zero_times,]
 
-#some of the streetonly missing values are actual streets just not filled in, others are highways of stations.
-#does this need to be fixed in order to proceed with prediction model?
-missingstreets <- callData1[is.na(callData1$streetonly),c("street","streetonly")]
-
-#searching for which streets are soley highways
-missingstreets[which(grepl("hwy|i 40|i-40| us",ignore.case = TRUE,missingstreets$street)),]
-
-#filling in streetonly variable with just the street names **needs editings**
-missingstreets$streetonly <- gsub("^[0-9]{1,5}\\s([^ ]*.*$)","\\1",missingstreets$street)
-
-
-
-
-
+zz<-zeroos[which(zeroos$agency=="EMS"),] #closer look into EMS calls with no duration.
 
 
 ##########Looking for Missing Values###############
 sort(colSums(is.na(callData1)))
-
-
 
 #variables to ignore: ***these have an overwhelming amount of NA's which means either procedures need to change, or these variables are not going to hinder model creation.***
 #parent_id, case_id, nature2, meddislvl,district, statbeat, ra, gp, primeunit,firstdisp
@@ -161,44 +139,97 @@ sort(colSums(is.na(callData1)))
 #corresponding column numbers: 5,6,7,11,13,16,22
 
 #collecting all the records where the columns have NA in the aforementioned focus column groups.
-missingVal<-callData1[unique (unlist (lapply (callData1[,c(5,6,7,11,13,16,22)], function (x) which (is.na (x))))),]
-
-
+missingVal<-callData1[unique (unlist (lapply (callData1[,c(5,6,7,9,14,19)], function (x) which (is.na (x))))),]
 
 #gaining a better understanding of which departments have the most missing values.
-colSums(is.na(callData1[which(callData1$agency=="ACO"),c(5,6,7,11,13,16,22)]))
-colSums(is.na(callData1[which(callData1$agency=="EMS"),c(5,6,7,11,13,16,22)]))
-colSums(is.na(callData1[which(callData1$agency=="GCF"),c(5,6,7,11,13,16,22)]))
-colSums(is.na(callData1[which(callData1$agency=="GCSD"),c(5,6,7,11,13,16,22)]))
+colSums(is.na(callData1[which(callData1$agency=="ACO"),c(5,6,7,9,14,19)]))
+colSums(is.na(callData1[which(callData1$agency=="EMS"),c(5,6,7,9,14,19)]))
+colSums(is.na(callData1[which(callData1$agency=="GCF"),c(5,6,7,9,14,19)]))
+colSums(is.na(callData1[which(callData1$agency=="GCSD"),c(5,6,7,9,14,19)]))
 
-
-
-# #suggestions on what to factorize...essentailly what will need dummy variables.
-# as.factor(callData1$agency)
-# as.factor(callData1$callsource)
-# as.factor(callData1$city)
-# as.factor(callData1$streetonly)
-# as.factor(callData1$nature)
-# as.factor(callData1$nature2)
-# as.factor(callData1$priority)
-# as.factor(callData1$medprior)
-# as.factor(callData1$rptonly)
-# as.factor(callData1$service)
-# as.factor(callData1$district)
-# as.factor(callData1$statbeat)
-# as.factor(callData1$primeunit)
-# as.factor(callData1$closecode)
-
+clean_time <- proc.time() - ptm #time is recorded in seconds, overall the cleaning process takes a little over 2 minutes.
 #############################################MODELLING DATA###################################################### 
-# #regression models to be implimented.
-# #NOTE: Trying to run these models took too long.
-# step(lm( duration ~ agency + callsource + city + streetonly + nature + nature2 + priority + medprior + rptonly + service + district + statbeat + primeunit + closecode + long + lat,data = callData1), direction = "backwards")
-# step(lm( duration ~ agency + callsource + city + streetonly + nature + nature2 + priority + medprior + rptonly + service + district + statbeat + primeunit + closecode + long + lat,data = callData1), direction = "forward")
+#include in model:
+#-lat and long
+#-nature
+#-agency
+#-priority **MAKE SUGGESTION ABOUT THE SYSTEM
+#-callsource
+#-sect... all of them even though they are not up to date.
 
-
-
-#duration needs to be converted to a number instead of the difference between two times in order to analyze it.
+#formatting variables
 callData1$duration <- as.numeric(callData1$duration)
+callData1$agency <- as.factor(callData1$agency)
+callData1$callsource <- as.factor(callData1$callsource)
+callData1$nature <- as.factor(callData1$nature)
+
+
+
+#Model Testing
+ptm <- proc.time()
+mod <-lm(duration ~ nature + agency + callsource + lat + long, data = callData1)
+mod1_time <- proc.time() - ptm
+summary(mod)
+
+ptm <- proc.time()
+mod2 <- lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
+mod2_time <- proc.time() - ptm
+summary(mod2)
+
+ptm <- proc.time()
+mod3 <- lm(duration ~ nature + agency + callsource + lat + long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
+mod3_time <- proc.time() - ptm
+summary(mod3)
+
+
+rm(mod2,mod) #we don't  actually need to keep these variables
+#these were merely confirming a suspicion 
+
+#the third model took barely 3 minutes to complete.
+#it should be noted that the seconds to ___ account for the accuracy in model 2, so it makes sense that they play the biggest role in the model.
+#since there is no improvement from model 2 to model 3, this leads to the suspicion that only the seconds to ___ matter in the duration of a call time.
+
+ptm <- proc.time()
+mod4 <- step(lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
+proc.time() - ptm
+
+ptm <- proc.time()
+mod5 <- step(lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
+proc.time() - ptm
+
+rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables that were more important than others.
+#apparently, there are none that are more important than the others.
+
+
+ptm <- proc.time()
+mod6 <- step(lm(duration ~ nature + agency + callsource + lat + long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
+proc.time() - ptm
+
+ptm <- proc.time()
+mod7 <- step(lm(duration ~ nature + agency + callsource + lat + long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
+proc.time() - ptm
+#mod 7 couldn't be completed because of computer's capability.
+#HOWEVER, even using a forwards or backwards regression shows that the seconds to ___ are the most important variables.
+#There is no change in adj R^2 once seconds to ___ variables are introduced.
+
+
+##NOTE: when these models are made, they are about 2 ~ 3 GB in size. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
