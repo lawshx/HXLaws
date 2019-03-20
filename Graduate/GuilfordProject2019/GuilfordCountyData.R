@@ -172,12 +172,17 @@ mod1_time <- proc.time() - ptm
 summary(mod)
 
 ptm <- proc.time()
-mod2 <- lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
+mod2 <- lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + 
+             secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + 
+             secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
 mod2_time <- proc.time() - ptm
 summary(mod2)
 
 ptm <- proc.time()
-mod3 <- lm(duration ~ nature + agency + callsource + lat + long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
+mod3 <- lm(duration ~ nature + agency + callsource + lat + long + 
+             secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + 
+             secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
+             secstr2lc, data = callData1)
 mod3_time <- proc.time() - ptm
 summary(mod3)
 
@@ -190,11 +195,17 @@ rm(mod2,mod) #we don't  actually need to keep these variables
 #since there is no improvement from model 2 to model 3, this leads to the suspicion that only the seconds to ___ matter in the duration of a call time.
 
 ptm <- proc.time()
-mod4 <- step(lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
+mod4 <- step(lm(duration ~ secs2rt + secs2di + secs2en + 
+                  secs2ar + secs2tr + secs2lc + secsdi2en + 
+                  secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
+                  secstr2lc, data = callData1), direction = "forward")
 proc.time() - ptm
 
 ptm <- proc.time()
-mod5 <- step(lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
+mod5 <- step(lm(duration ~ secs2rt + secs2di + secs2en + 
+                  secs2ar + secs2tr + secs2lc + secsdi2en + 
+                  secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
+                  secstr2lc, data = callData1), direction = "backward")
 proc.time() - ptm
 
 rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables that were more important than others.
@@ -202,11 +213,17 @@ rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables tha
 
 
 ptm <- proc.time()
-mod6 <- step(lm(duration ~ nature + agency + callsource + lat + long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
+mod6 <- step(lm(duration ~ nature + agency + callsource + lat + 
+                  long + secs2rt + secs2di + secs2en + secs2ar + 
+                  secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + 
+                  secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
 proc.time() - ptm
 
 ptm <- proc.time()
-mod7 <- step(lm(duration ~ nature + agency + callsource + lat + long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
+mod7 <- step(lm(duration ~ nature + agency + callsource + lat + 
+                  long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + 
+                  secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + 
+                  secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
 proc.time() - ptm
 #mod 7 couldn't be completed because of computer's capability.
 #HOWEVER, even using a forwards or backwards regression shows that the seconds to ___ are the most important variables.
@@ -218,21 +235,19 @@ proc.time() - ptm
 
 
 
+callData2 <- callData1[,c("duration","agency","callsource","lat","long",
+                          "secs2rt","secs2di","secs2en","secs2ar","secs2tr","secs2lc",
+                          "secsdi2en","secsdi2ar","secsar2tr","secsar2lc","secsrt2dsp",
+                          "secstr2lc")]
+####CREATING DUMMY VARIABLES#####
+
+for (i in 1:nrow(NATURE)){
+  callData2 <- cbind(callData2,NATRUE[i,] = ifelse( callData1$nature == paste(NATURE[i,]), 1, 0))
+}
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+#
 
 
 
