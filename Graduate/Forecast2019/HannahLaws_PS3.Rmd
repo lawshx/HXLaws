@@ -16,14 +16,41 @@ You are interested in expanding the premises, the range of products, and staff o
 The data set `fancy` concerns the monthly sales figures for this shop.
 
 1- Produce a time plot of the data and describe the patterns in the graph. Identify any unusual or unexpected fluctuations in the time series.
+```{r}
+autoplot(fancy)
+ggseasonplot(fancy)
+ggsubseriesplot(fancy)
+ggAcf(fancy)
+Box.test(fancy,type = "Ljung-Box")
+plot(decompose(fancy, type = "multiplicative"))
+```
+From the plot of the original series, it would seem that this data have an increasing trend with seassonality. With the decomposition of the series, this further confirms an upward trend and seasonality. However, looking at the ACF lag plot, it looks as though there is is not much significance in the data. And with the Ljung-Box test having a small p-value, this brings even more concern that the series may be white noise.   
 
 2- Explain why it is necessary to take logarithms of these data before fitting a model.
+With the positive trend in the data, we would want the logarithms of the data to take out the trend and focus on the seasonal nature of the data.
 
 3- Use R to fit a regression model to the logarithms of these sales data with a linear trend, seasonal dummies and a *surfing festival* dummy variable.
+```{r}
+surf.fest <- cycle(fancy)==3
+surf.fest[3] <- FALSE
+mod <- tslm(log(fancy) ~ trend + season + surf.fest, data = fancy)
+summary(mod)
+```
+
 
 4- Plot the residuals against time and against the fitted values. Do these plots reveal any problems with the model?
+```{r}
+res <- residuals(mod)
+autoplot(res)
+ggplot(fancy,aes(x = res, y = fitted(mod))) + geom_point()
+checkresiduals(mod)
+```
+The plots do not seem to show any indication of a pattern. Using the `checkresiduals` command also confirms that the residuals are just barely white noise. Many of the ACF lags reach past the threshold so while there technically is nothing left in the residuals, it's a pretty close call.
 
 5- Do boxplots of the residuals for each month. Does this reveal any problems with the model?
+```{r}
+ggplot(res) + geom_boxplot(aes(x = cycle(res), y = res, group = cycle(res)))
+```
 
 6- What do the values of the coefficients tell you about each variable?
 
@@ -32,4 +59,9 @@ The data set `fancy` concerns the monthly sales figures for this shop.
 8- Regardless of your answers to the above questions, use a regression model to predict the monthly sales for 1994, 1995, and 1996. Produce prediction intervals for each of your forecasts.
 
 9- How could you improve these predictions by modifying the model?
+
+
+
+
+
 
