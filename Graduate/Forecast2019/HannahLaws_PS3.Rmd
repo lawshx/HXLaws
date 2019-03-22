@@ -6,6 +6,7 @@ date: "Date: "
 ---
 ```{r, warning = FALSE, message = FALSE}
 library(fpp2) # You will always load this package before analyzing any time series data.
+library(lmtest)
 ```
 
 ### Question: 
@@ -49,17 +50,29 @@ The plots do not seem to show any indication of a pattern. Using the `checkresid
 
 5- Do boxplots of the residuals for each month. Does this reveal any problems with the model?
 ```{r}
-ggplot(res) + geom_boxplot(aes(x = cycle(res), y = res, group = cycle(res)))
+boxplot(residuals(mod)~cycle(residuals(mod)))
 ```
+Looking at the boxplots of the residuals for each month, there seems to be larger difference in variance in the colder months such as August through December. This should not be the case if the model fits the data well, so this further confirms that it is missing information.
+
 
 6- What do the values of the coefficients tell you about each variable?
+Each of the coefficients represent the percentage change in sales in relation to a unit change in the variable. So if `season2` were to increase by one unit, then the sales will change by roughly 0.25%. Since most of the coefficients are relatively small, this would mean that they do not have a big impact on sales.
 
 7- What does the Breusch-Godfrey test tell you about your model?
+```{r}
+bgtest(mod, fill = NA)
+```
+The Breusch-Godfrey test gives a p-value of 3.795e-07 which means the null hypothesis is reject. So there is serial correlation in the model. 
 
 8- Regardless of your answers to the above questions, use a regression model to predict the monthly sales for 1994, 1995, and 1996. Produce prediction intervals for each of your forecasts.
+```{r}
+pred <- forecast(mod,newdata = data.frame(surf.fest = rep(FALSE,36)))
+pred
+```
+
 
 9- How could you improve these predictions by modifying the model?
-
+According to the Breusch-Godfrey test indicating that there is serial correlation in the model, it would be best to capture this information to improve the model. This can be acheived by taking the log of all variables, or ridding of seasonality.
 
 
 
