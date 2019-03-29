@@ -8,7 +8,7 @@ import os
 os.getcwd()
 import pandas as pd
 
-file = "C:/Users/lawsh/Documents/GitHubProjects/HXLaws/Graduate/GuilfordProject2019/callsForServiceUpdated.csv"
+file = "C:/Users/lawsh/Source/Repos/HXLaws/Graduate/GuilfordProject2019/callsForServiceUpdated.csv"
 
 TheData = pd.read_csv(file)
 TheData.columns.values #understanding the colnames.
