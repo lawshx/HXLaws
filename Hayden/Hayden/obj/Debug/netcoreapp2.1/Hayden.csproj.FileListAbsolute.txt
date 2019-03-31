@@ -1,0 +1,11 @@
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\obj\Debug\netcoreapp2.1\Hayden.csprojAssemblyReference.cache
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\obj\Debug\netcoreapp2.1\Hayden.csproj.CoreCompileInputs.cache
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\obj\Debug\netcoreapp2.1\Hayden.AssemblyInfoInputs.cache
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\obj\Debug\netcoreapp2.1\Hayden.AssemblyInfo.cs
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\bin\Debug\netcoreapp2.1\Hayden.deps.json
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\bin\Debug\netcoreapp2.1\Hayden.runtimeconfig.json
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\bin\Debug\netcoreapp2.1\Hayden.runtimeconfig.dev.json
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\bin\Debug\netcoreapp2.1\Hayden.dll
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\bin\Debug\netcoreapp2.1\Hayden.pdb
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\obj\Debug\netcoreapp2.1\Hayden.dll
+C:\Users\lawsh\Source\Repos\HXLaws\Hayden\Hayden\obj\Debug\netcoreapp2.1\Hayden.pdb
