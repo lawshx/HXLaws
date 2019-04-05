@@ -1,6 +1,8 @@
 ptm <- proc.time() #timing how long it takes to run the cleaning process of the script.
 library(stringr)
 library(plyr)
+library(dplyr)
+library(ggplot2)
 
 setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 
@@ -165,6 +167,8 @@ callData1$nature <- as.factor(callData1$nature)
 
 
 
+
+
 #Model Testing
 ptm <- proc.time()
 mod <-lm(duration ~ nature + agency + callsource + lat + long, data = callData1)
@@ -208,7 +212,7 @@ mod5 <- step(lm(duration ~ secs2rt + secs2di + secs2en +
                   secstr2lc, data = callData1), direction = "backward")
 proc.time() - ptm
 
-rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables that were more important than others.
+rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables with greater significance.
 #apparently, there are none that are more important than the others.
 
 
@@ -231,7 +235,8 @@ proc.time() - ptm
 
 
 ##NOTE: when these models are made, they are about 2 ~ 3 GB in size. 
-
+#We'll remove the models to free up space.
+rm(mod3, mod4, mod5, mod6, mod7)
 
 
 
@@ -244,10 +249,79 @@ callData2 <- callData1[,c("duration","agency","callsource","lat","long",
 for (i in 1:nrow(NATURE)){
   callData2 <- cbind(callData2,NATRUE[i,] = ifelse( callData1$nature == paste(NATURE[i,]), 1, 0))
 }
+#This is a very taxing process and may not be worth it.
+
+
+########################################DEEP DIVE INTO DATA#################################################
+GCSD<-as.data.frame(subset(callData1,callData1$agency=="GCSD"))
+
+#create a data frame that shows the frequency of calls by nature. 
+#These frequencies are based on the date and not the time.
+#We will only do this for the call data from the fire department.
+answer <- GCF %>%
+  group_by(date = as.Date(start_time), nature) %>%
+  summarise(frequency_received = n())
+
+#Since it's not already a data frame, we will format it as such.
+answer <- as.data.frame(answer)
+
+
+#There is a significant value above 150.
+#This makes it hard to see any patterns within the scatter plot.
+ggplot(answer, aes(x = date, y= frequency_received), group_by(nature)) + geom_point()
+
+
+#Here's the significant value.
+max(answer$frequency_received)
+answer[which(answer$frequency_received==166),]
+
+#Here we try an isolate the outlier with all observations of that same nature.
+#However, looking at this subset proves to not be useful.
+answer2 <- answer %>%
+  group_by(date, citizens = nature=="CITIZEN ASSIST / SERVICE CALL") %>%
+  summarise(frequency_received = n())%>%
+  filter(citizens == TRUE)
+
+
+#Upon further research, this high frequency number was because of a snow storm in which a state of emergency was declared. 
+#In this case we will call this data point an outlier and delete it.
+answer <- answer[-10500,]
+
+
+#With this point deleted, the graph already looks significantly better.
+#The y limit is adjusted to see the *majority* of the points.
+ggplot(answer, aes(x = date, y = frequency_received)) + ylim(0,35) + geom_point()
+
+####################################################################################################
+
+
+#This is a function to pake the process smoother. It takes the tasks we did to sort and graph.
+patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn,max = 170){
+  
+  if (sub == "all"){
+    allData <- callData1 %>%
+      group_by(date = as.Date(start_time), desired = nature == nn) %>%
+      summarise(frequency_received = n()) %>%
+      filter(desired == TRUE)
+  }
+  else{
+    allData <- subset(callData1,callData1$agency == sub) %>%
+      group_by(date = as.Date(start_time), desired = nature == nn) %>%
+      summarise(frequency_received = n()) %>%
+      filter(desired == TRUE)
+  }
+
+  allData <- as.data.frame(allData)
+  
+  ggplot(allData, aes(x = date, y= frequency_received), group_by(nature)) + geom_point() + ylim(0,max)
+  
+}
+
+
+patterns("GCF","CITIZEN ASSIST / SERVICE CALL")
 
 
 
-#
 
 
 
@@ -255,7 +329,23 @@ for (i in 1:nrow(NATURE)){
 
 
 
-##################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#######################################WRITING CSV#####################################################
 #separate data by agency
 GCSD<-as.data.frame(subset(callData1,callData1$agency=="GCSD"))
 ACO<-as.data.frame(subset(callData1,callData1$agency=="ACO"))
@@ -267,10 +357,4 @@ write.csv(GCSD,file = "GuilfordProject2019_CSV/GCSD.csv")
 write.csv(ACO,file = "GuilfordProject2019_CSV/ACO.csv")
 write.csv(EMS,file = "GuilfordProject2019_CSV/EMS.csv")
 write.csv(GCF,file = "GuilfordProject2019_CSV/GCF.csv")
-
-
-
-
-
-
-
+#######################################################################################################
