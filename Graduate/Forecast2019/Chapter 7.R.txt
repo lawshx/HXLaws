@@ -1,0 +1,123 @@
+# Chapter 7 Exponential smoothing
+library(fpp2) # Load fpp2 package
+################################################################################################
+# Simple exponential smoothing
+oildata <- window(oil, start = 1996) # oil: Annual oil production (millions of tonnes), Saudi Arabia, 1965-2013.
+
+fc <- ses(oildata, h = 5) # Estimate parameters
+fc1 <- ses(oildata, alpha = .999, h = 5) # Estimate parameters, set alpha = 0.1
+summary(fc) #  look at the smoothing parameters
+
+fc # Accuracy of one-step-ahead training errors over period 1-12
+round(accuracy(fc), 2)
+
+# Figure 7.2: Simple exponential smoothing applied to oil production in Saudi Arabia (1996–2013). 
+fc %>%
+  autoplot() +
+  autolayer(fitted(fc), series = "Fitted") +
+  autolayer(fitted(fc1), series = "Alpha = 0.1") +
+  ylab("Oil (millions of tonnes)") + 
+  xlab("Year")
+################################################################################################
+# SEc: 7.2 Trend methods
+# auair data: Total annual air passengers (in millions) including domestic and international aircraft passengers of air carriers registered in Australia. 1970-2015.
+
+# Figure 7.3: Total annual passengers of air carriers registered in Australia. 1990-2016. 
+air <- window(ausair, start = 1990)
+air %>%
+  autoplot() +
+  ggtitle("Air passengers in Australia") +
+  xlab("Year") + 
+  ylab("millions of passengers")
+
+fc <- holt(air, h = 5)
+summary(fc)
+
+# Damped trend methods
+fc <- holt(air, h = 15)
+fc2 <- holt(air, damped = TRUE, phi = 0.9, h = 15)
+
+# Figure 7.4: Forecasting Air Passengers in Australia (millions of passengers). For the damped trend method, phi = 0.90. 
+air %>%
+  autoplot() +
+  autolayer(fc, series="Holt's method", PI=FALSE) +
+  autolayer(fc2, series="Damped Holt's method", PI=FALSE) +
+  ggtitle("Forecasts from Holt's method") +
+  xlab("Year") + ylab("Air passengers in Australia (millions)") +
+  guides(colour=guide_legend(title="Forecast"))
+################################################################################################
+# Example: Sheep in Asia (In this example, we compare the forecasting performance of the three exponential smoothing methods)
+
+# Figure 7.5: Annual sheep livestock numbers in Asia (in million head) 
+livestock %>%
+  autoplot() +
+  xlab("Year") + 
+  ylab("Livestock, sheep in Asia (millions)")
+# We will use time series cross-validation to compare the one-step forecast accuracy of the three methods.
+
+e1 <- tsCV(livestock, ses, h = 1)
+e2 <- tsCV(livestock, holt, h = 1)
+e3 <- tsCV(livestock, holt, damped = TRUE, h = 1)
+
+# Compare MSE:
+mean(e1^2, na.rm = TRUE)
+mean(e2^2, na.rm = TRUE)
+mean(e3^2, na.rm = TRUE)
+
+# Compare MAE:
+mean(abs(e1), na.rm = TRUE)
+mean(abs(e2), na.rm = TRUE)
+mean(abs(e3), na.rm = TRUE)
+
+# Damped Holt’s method is best whether you compare MAE or MSE values.
+fc <- holt(livestock, damped = TRUE)
+summary(fc)
+
+# Notes: The smoothing parameter for the slope is estimated to be essentially zero, 
+# indicating that the trend is not changing over time. 
+# The value of alpha is very close to one, showing that the level reacts strongly to each new observation.
+
+# Figure 7.6: Forecasting livestock, sheep in Asia: comparing forecasting performance of non-seasonal method. 
+fc %>%
+  autoplot() +
+  xlab("Year") + 
+  ylab("Livestock, sheep in Asia (millions)")
+################################################################################################
+# 7.3 Holt-Winters’ seasonal method
+
+# Figure 7.7: Forecasting international visitor nights in Australia using the Holt-Winters method with both additive and multiplicative seasonality. 
+aust <- window(austourists, start = 2005) # Quarterly visitor nights (in millions) spent by international tourists to Australia. 1999-2015.
+
+fit1 <- hw(aust, seasonal = "additive") # Applying Holt-Winters’ method with additive seasonality 
+summary(fit1) # Look at alpha, beta, gamma, initial level, and RMSE
+
+fit2 <- hw(aust, seasonal = "multiplicative") # Applying Holt-Winters’ method with multiplicative seasonality 
+summary(fit2) # Look at alpha, beta, gamma, initial level, and RMSE
+
+fit3 <- hw(aust, damped = TRUE, seasonal="multiplicative") # # Applying Holt-Winters’ damped method with multiplicative seasonality 
+summary(fit3)
+
+aust %>%  
+  autoplot() +
+  autolayer(fit1, series = "HW additive forecasts", PI = FALSE) +
+  autolayer(fit2, series = "HW multiplicative forecasts", PI = FALSE) +
+  autolayer(fit3, series = "HW multi damped", PI = FALSE)+
+  xlab("Year") + ylab("International visitor night in Australia (millions)") +
+  guides(colour=guide_legend(title="Forecast"))
+################################################################################################
+# Sec 7.6 Estimating ETS models
+
+# Example: International tourist visitor nights in Australia
+
+aust <- window(austourists, start = 2005) 
+fit <- ets(aust)
+summary(fit) 
+# The parameter estimates are α=0.1908, β=0.03919, and γ=0.0001917. 
+################################################################################################
+# 7.7 Forecasting with ETS models
+# To obtain forecasts from an ETS model, we use the forecast() function.
+fit %>% 
+  forecast(h = 8) %>%
+  autoplot() +
+  ylab("International visitor night in Australia (millions)")
+################################################################################################

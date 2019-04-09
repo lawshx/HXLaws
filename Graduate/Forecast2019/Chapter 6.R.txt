@@ -1,0 +1,82 @@
+# Chapter 6 Time series decomposition
+library(fpp2) # Load fpp2 package
+################################################################################################
+# Figure 6.4: Residential electricity sales
+elecsales %>%
+  autoplot() + 
+  xlab("Year") + 
+  ylab("GWh") +
+  ggtitle("Annual electricity sales: South Australia")
+
+# Figure 6.5: Residential electricity sales (black) along with the 5-MA estimate of the trend-cycle
+elecsales %>%
+  autoplot(series = "Data") + # plot the original series, name it 'Data'
+  autolayer(ma(elecsales, 5), series = "5-MA") + # plot 5-MA series, name it '5-MA'
+  xlab("Year") + 
+  ylab("GWh") +
+  ggtitle("Annual electricity sales: South Australia") +
+  scale_colour_manual(values=c("Data"="grey50","5-MA"="red"),
+                      breaks=c("Data","5-MA"))
+
+elecequip # Look at the data
+# Figure 6.8: A classical multiplicative decomposition
+elecequip %>% 
+  decompose(type = "multiplicative") %>% 
+  autoplot() + 
+  xlab("Year") +
+  ggtitle("Classical multiplicative decomposition 
+          of electrical equipment index")
+#The grey bars to the right of each panel show the relative scales of the components.
+
+# Figure 6.9: An X11 decomposition
+library(seasonal) # You may need to install seasonal package.
+elecequip %>% 
+  seas(x11 = "") %>%
+  autoplot() +
+  ggtitle("X11 decomposition of electrical equipment index")
+# Notice that the seasonal component is allowed to vary slowly over time.
+
+# Figure 6.10: Electrical equipment orders
+fit <- elecequip %>% 
+  seas(x11 = "")
+
+elecequip %>% 
+  autoplot(series = "Data") + # plot original series, name it 'Data'
+  autolayer(trendcycle(fit), series = "Trend") + # extract the trend-cycle component using trendcycle(), name it 'Trend'  
+  autolayer(seasadj(fit), series = "Seasonally Adjusted") + # use seasadj() to compute the seasonally adjusted time series
+  xlab("Year") + 
+  ylab("New orders index") +
+  ggtitle("Electrical equipment manufacturing (Euro area)") +
+  scale_colour_manual(values = c("gray", "blue", "red"),
+                      breaks = c("Data", "Seasonally Adjusted", "Trend"))
+
+# Figure 6.12: A SEATS decomposition of the new orders index for electrical equipment.
+elecequip %>% 
+  seas() %>%
+  autoplot() +
+  ggtitle("SEATS decomposition of electrical equipment index")
+################################################################################################
+# Section 6.6 STL decomposition
+elecequip %>%
+  stl(t.window = 13, s.window = "periodic", robust = TRUE) %>%
+  autoplot()
+
+# s.window: either the character string "periodic" or the span (in lags) of the loess window for 
+# seasonal extraction, which should be odd and at least 7, according to Cleveland et al. 
+# This has no default.
+# t.window : the span (in lags) of the loess window for trend extraction, which should be odd
+# The above arguments control how rapidly the trend-cycle and seasonal components can change. 
+# Smaller values allow for more rapid changes.
+# robust: logical (TURE/FALSE) indicating if robust fitting be used in the loess procedure.
+################################################################################################
+# Sec 6.8 Forecasting with decomposition
+# The following code will decompose the time series using STL, forecast the seasonally adjusted series, 
+# and return reseasonalize the forecasts.
+fcast <- stlf(elecequip, method='naive') # Other forecast methods: 'ets', 'arima, 'naive', 'rwdrift'. It is the method to be used for forecasting seasonally adjusted series.
+fcast
+
+fcast %>%
+  autoplot() +
+  xlab("Year") + 
+  ylab("New orders index") +
+  ggtitle("Electrical equipment manufacturing (Euro area) forecast using STL method")

@@ -1,0 +1,50 @@
+---
+title: "Grocery Store Sales Time Series Analysis"
+author: "Hannah Laws"
+date: "April 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(fpp2)
+library(dplyr)
+library(seasonal)
+d<-read.csv("RSGCSN.csv")
+# https://fred.stlouisfed.org/series/RSGCSN
+```
+
+
+
+First, convert the series into a time series so that we may begin processing the data.
+```{r}
+#cleaning up the data
+td<-ts(d$RSGCSN, frequency = 12, start = c(1992,1))
+
+autoplot(td)
+ggseasonplot(td)
+ggsubseriesplot(td)
+ggAcf(td)
+Box.test(td,type = "Ljung-Box")
+plot(decompose(td, type = "additive"))
+```
+The very first graph is of the original data and shows a pronounced positive trend. This graph does not show the series having seasonality, but looking at the second plot, we see the seasons being yearly as well as the increase in revenue over the years. With the subseries plot, there seems to be a fair amount of variability in each month. The ACF plot confirms the upward trend again. The Ljung-Box test shows that the series is not white noise. And the decomposed graph table shows all the different components of the time series and thus confirms the upward trend and seasonality.
+
+
+So we will need to take the log of the series in order to dampen the trend and then also adjust for the seasonality.
+```{r}
+adj_td<- seas(td,x11 = "")
+
+autoplot(td, series = "original") + 
+  autolayer(trendcycle(adj_td), series = "trend") + 
+  autolayer(seasadj(adj_td), series = "seasons")
+
+
+adj_td_adj <- seasonal(adj_td)
+ggsubseriesplot(adj_td_adj)
+
+
+autoplot(adj_td)
+
+```
+

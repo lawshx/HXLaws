@@ -1,0 +1,271 @@
+# Chapter 5 Linear regression models
+library(fpp2) # Load fpp2 package
+################################################################################################
+# Figure 5.2: Percentage changes in personal consumption expenditure and personal income for the US
+# 'uschange' time series shows quarterly percentage changes (growth rates) of real personal consumption expenditure (y) 
+# and real personal disposable income (x) for the US from 1970 Q1 to 2016 Q3.
+
+summary(uschange) # Look at the data; it contains 5 variables
+uschange[, c("Consumption","Income")] %>%     # Extract two columns: "Consumption" and "Income"
+  autoplot() +                                # Plot these two columns
+  ylab("% change") + xlab("Year")
+
+# It is apparent that these two series move together.
+
+# Figure 5.3: Scatterplot of consumption versus income and the fitted regression line.
+uschange %>%                                  # Use 'uschange' data 
+  as.data.frame() %>%                         # Convert it to a data frame from time series data
+  ggplot(aes(x = Income, y = Consumption)) +  # Plot 'Income' variable on x-axis and 'Consumption' on y-axis (+ sign means we want to add another layer)
+  ylab("Consumption (quarterly % change)") +  # Label y-axis as "Consumption (quarterly % change)" (+ sign means we want to add another layer)
+  xlab("Income (quarterly % change)") +       # Label x-axis as "Income (quarterly % change)" (+ sign means we want to add another layer)
+  geom_point() +                              # Plot those two variables as points on the graph (+ another layer)
+  geom_smooth(method = "lm", se = FALSE)      # Add a linear model to the plot (lm).
+# Again we see a positive relationship as the income change goes up so does consumtion change.
+
+# How did we fit the linear model above? We used 'time series linear model' function (tslm)
+# tslm(formula, data); formula is our linear model e.g. tslm(y ~ x, data = mydata)
+tslm(Consumption ~ Income, data=uschange)   # Simple linear model
+# We get our fitted model as y(hat) = 0.55 + 0.28 x; here intercept = 0.55, slope = 0.28 
+# The slope coefficient shows that a one unit increase in x (a 1% increase in personal disposable income) 
+# results on average in 0.28 units increase in y (an average 0.28% increase in personal consumption expenditure).
+# When x = 0 (i.e., when there is no change in personal disposable income since the last quarter) 
+# the predicted value of y is 0.55 (i.e., an average increase in personal consumption expenditure of 0.55%).
+################################################################################################
+# Section 5.2 Least squares estimation
+fit.consMR <- tslm(Consumption ~ Income + Production + Unemployment + Savings,
+                   data = uschange)   # Estimate this multiple regression model
+summary(fit.consMR)   # show the results
+#--------------------------------------------------------------------------------
+# Next we want to test the prediction of the above model.
+
+# Figure 5.6: Time plot of US consumption expenditure and predicted expenditure. 
+uschange[, c("Consumption")] %>%                            # Extract "Consumption" column from the original data set
+  autoplot(series = "Data") +                               # Call the orginal 'Consumption' searies 'Data'
+  autolayer(fitted(fit.consMR), series = "Fitted") +        # Add fitted value layer on top of it, call it 'Fitted'
+  xlab("Year") + ylab("") +
+  ggtitle("Percentage change in US consumption expenditure") +
+  guides(colour=guide_legend(title=" "))
+# The time plot in this figure shows that the fitted values follow the actual data fairly closely.
+#--------------------------------------------------------------------------------
+# Now explore the relationship between actual and predicted values
+# Figure 5.7: Actual US consumption expenditure plotted against predicted US consumption expenditure.
+
+FitVsActual <- cbind(Data = uschange[,"Consumption"], Fitted = fitted(fit.consMR))  # column bind two colmns (explanation in the class)
+
+FitVsActual %>% 
+  as.data.frame() %>%
+  ggplot(aes(x = Data, y = Fitted)) +
+  geom_point() +
+  xlab("Fitted (predicted values)") +
+  ylab("Data (actual values)") +
+  ggtitle("Percentage change in US consumption expenditure") +
+  geom_abline(intercept = 0, slope = 1)   
+
+# Note that if fitted values = actual values, we would expect slope = 1. 
+lm <- tslm(Data ~ Fitted, data = FitVsActual); summary(lm)
+# Fitted explains about 75 % of the variation in the acutal data (pretty good)
+################################################################################################
+# Section 5.3 Evaluating the regression model
+
+# We can obtain all the useful residual diagnostics using the checkresiduals function
+fit.consMR <- tslm(Consumption ~ Income + Production + Unemployment + Savings,
+                   data = uschange)   # Estimate this multiple regression model
+checkresiduals(fit.consMR)
+
+# 1- The time plot shows some changing variation over time, but is otherwise relatively unremarkable. 
+# This heteroskedasticity will potentially make the prediction interval coverage inaccurate.
+
+# 2 - The histogram shows that the residuals seem to be slightly skewed, 
+# which may also affect the coverage probability of the prediction intervals.
+
+# 3- The autocorrelation plot shows a significant spike at lag 7, 
+# but it is not quite enough for the Breusch-Godfrey to be significant at the 5% level.
+
+# Note: We will use the Breusch-Godfrey test for regression models, but the Ljung-Box test otherwise.
+#--------------------------------------------------------------------------------
+# Residual plots against predictors
+# We would expect the residuals to be randomly scattered without showing any systematic patterns
+fit.consMR <- tslm(Consumption ~ Income + Production + Unemployment + Savings,
+                   data = uschange)   # Estimate this multiple regression model
+df <- as.data.frame(uschange) # Store the 'uschange' as a data frame.
+df[,"Residuals"]  <- as.numeric(residuals(fit.consMR))  # Calculate residual from the aboe model
+p1 <- ggplot(df, aes(x = Income, y = Residuals)) + geom_point()   # Plot 1
+p2 <- ggplot(df, aes(x = Production, y = Residuals)) + geom_point() # Plot 2
+p3 <- ggplot(df, aes(x = Savings, y = Residuals)) + geom_point()  # Plot 3
+p4 <- ggplot(df, aes(x = Unemployment, y = Residuals)) + geom_point()  # Plot 4
+
+# Make a graide of 2 rows of these four plots
+gridExtra::grid.arrange(p1, p2, p3, p4, nrow = 2) # You may need to  install.packages("gridExtra")
+
+# This graph shows that the residuals are randomly scattered; no apparent pattern.
+#--------------------------------------------------------------------------------
+# Residual plots against fitted values
+# A plot of the residuals against the fitted values should also show no pattern. 
+# If a pattern is observed, there may be "heteroscedasticity" in the errors,
+# which means that the variance of the residuals may not be constant. 
+# If this problem occurs, a transformation of the forecast variable (such as a logarithm or square root) may be required.
+cbind(Fitted = fitted(fit.consMR), Residuals = residuals(fit.consMR)) %>%  # combine fitted values and residual columns.
+  as.data.frame() %>%
+  ggplot(aes(x = Fitted, y = Residuals)) + geom_point()
+# The random scatter suggests the errors are homoscedastic.
+
+boxplot(df[,"Residuals"])
+################################################################################################
+# Section 5.3 Evaluating the regression model
+fit.consSR <- tslm(Consumption ~ Income, data = uschange)   # Estimate this simple regression model
+summary(fit.consSR)   # show the results
+# R-squared = 16%; Income explains about 16% of the variation in consumption
+
+fit.consMR <- tslm(Consumption ~ Income + Production + Unemployment + Savings,
+                   data = uschange)   # Estimate this multiple regression model
+summary(fit.consMR)   # show the results
+# R-squared = 75.4%; This model does an excellent job as it explains most of the variation in the consumption data. 
+# Compare that to the R2 value of 16% obtained from the simple regression with the same data. 
+# Adding the three extra predictors has allowed a lot more of the variance in the consumption data to be explained.
+# ------------------------------------------------------------------------------
+# Standard error of the regression
+# This is shown in the above output with the value 0.329.
+# When the residual standard error is exactly 0 then the model fits the data perfectly (likely due to overfitting).
+# ------------------------------------------------------------------------------
+# Spurious regression
+#  Air passenger traffic in Australia has nothing to do with rice production in Guinea.
+aussies <- window(ausair, end = 2011)
+fit <- tslm(aussies ~ guinearice)
+summary(fit)
+# Although rice production in Guinea explains about 96% of the variation in Air passenger traffic in Australia
+# Also, rice production in Guinea is statistically significant at 1%.
+# It is spurious correlation. These two variables are determined by a common factor (time).
+################################################################################################
+# Section 5.4 Some useful predictors (Dummy Variables)
+# Figure 5.14: Australian quarterly beer production. 
+beer2 <- window(ausbeer, start=1992)
+
+beer2 %>%
+  autoplot() + 
+  xlab("Year") + 
+  ylab("Megalitres")
+
+fit.beer <- tslm(beer2 ~ trend + season) # Fit a linear model with trend and seasonality
+summary(fit.beer)   # Display results
+
+# There is a downward trend of -0.34 megalitres per quarter.
+# On average, the second quarter has production of 34.7 megalitres lower than the first quarter, 
+# the third quarter has production of 17.8 megalitres lower than the first quarter, 
+# and the fourth quarter has production of 72.8 megalitres higher than the first quarter.
+
+# Figure 5.15: Time plot of beer production and predicted beer production. 
+autoplot(beer2, series="Data") +
+  autolayer(fitted(fit.beer), series="Fitted") +
+  xlab("Year") + 
+  ylab("Megalitres") +
+  ggtitle("Quarterly Beer Production")
+
+# Figure 5.16: Actual beer production plotted against predicted beer production. 
+cbind(Data = beer2, Fitted = fitted(fit.beer)) %>%
+  as.data.frame() %>%
+  ggplot(aes(x = Data, y = Fitted, colour = as.factor(cycle(beer2)))) +
+  geom_point() +
+  ylab("Fitted") + xlab("Actual values") +
+  ggtitle("Quarterly beer production") +
+  scale_colour_brewer(palette = "Dark2", name = "Quarter") +
+  geom_abline(intercept = 0, slope = 1)
+################################################################################################
+# Section 5.5 Selecting predictors
+# Cross-validation
+# Under this criterion, the best model is the one with the smallest value of CV.
+fit.consMR <- tslm(Consumption ~ Income + Production + Unemployment + Savings,
+                   data = uschange) 
+fit.consSR <- tslm(Consumption ~ Income, data = uschange)
+CV(fit.consMR)
+CV(fit.consSR)
+
+# Variable Selection 
+# Selecting a subset of predictor variables from a larger set (e.g., stepwise selection) is a controversial topic. 
+# You can perform stepwise selection (forward, backward, both) using the stepAIC( ) function from the MASS package. 
+# stepAIC( ) performs stepwise model selection by exact AIC. 
+
+# Stepwise Regression
+library(MASS) # Insrall 'MASS' package for the first time
+fit.step <- tslm(Consumption ~ Income + Production + Unemployment + Savings,
+                 data = uschange)
+
+step <- stepAIC(fit.step, direction = "forward") # Other options; direction = c("both", "backward", "forward")
+
+# Alternatively, you can perform all-subsets regression using the leaps( ) function from the leaps package
+# In the following code nbest indicates the number of subsets of each size to report. 
+# Here, the ten best models will be reported for each subset size (1 predictor, 2 predictors, etc.).
+
+# All Subsets Regression
+library(leaps)
+leaps <- regsubsets(Consumption ~ Income + Production + Unemployment + Savings,
+                    data = uschangea, nbest = 10)
+# plot a table of models showing variables in each model.
+# models are ordered by the selection statistic.
+plot(leaps, scale = "r2")
+
+# Other options for plot( ) are bic, Cp, and adjr2.
+################################################################################################
+# Section 5.6 Forecasting with regression
+beer2 <- window(ausbeer, start = 1992)
+
+fit.beer <- tslm(beer2 ~ trend + season)  # Fit the model 
+fcast <- forecast(fit.beer) # Forecast the model
+  autoplot(fcast) +
+  ggtitle("Forecasts of beer production using linear regression")
+  
+# Scenario based forecasting
+fit.consBest <- tslm(Consumption ~ Income + Savings + Unemployment, 
+                       data = uschange)  # Fit the regrssion model
+h <- 4 # forecaste horizon is 4 periods ahead
+newdata <-  cbind(Income = c(1, 1, 1, 1), # Generate new data based on income increase by 1%
+            Savings = c(0.5, 0.5, 0.5, 0.5), # savings increase by 0.5%
+            Unemployment = c(0, 0, 0, 0)) %>% # unemployment unchanged
+    as.data.frame()  # convert this data into a data frame
+
+fcast.up <- forecast(fit.consBest, newdata = newdata) # Forecast the model based on increased new data.
+
+newdata <- cbind(Income = rep(-1, h), # Generate new data based on income decrease by 1%
+          Savings = rep(-0.5, h), # savings decrease by 0.5%
+          Unemployment = rep(0, h)) %>% # unemployment unchanged
+    as.data.frame() # convert this data into a data frame
+
+fcast.down <- forecast(fit.consBest, newdata=newdata) # Forecast the model based on decreased new data.
+  
+autoplot(uschange[, 1]) + ylab("% change in US consumption") + # Autoplot the original series
+    autolayer(fcast.up, PI = TRUE, series = "increase") +  # Add a layer of forecaste if values go up
+    autolayer(fcast.down, PI = TRUE, series = "decrease") + # Add a layer of forecaste if values go down
+    guides(colour = guide_legend(title = "Scenario"))
+
+# Prediction intervals
+# If we assume an extreme increase of 10% in income then the prediction intervals are considerably wider
+fit.cons <- tslm(Consumption ~ Income, data = uschange)
+h <- 4  # forecast horizon
+fcast.up <- forecast(fit.cons, 
+                       newdata = data.frame(Income = rep(mean(uschange[,"Income"]), h)))  # forecast based on generated new data with Income  = mean Income in the data repeated h times
+fcast.down <- forecast(fit.cons,
+                         newdata = data.frame(Income = rep(10, h))) # forecast based on generated new data with Income  = 10 repeated h times
+
+autoplot(uschange[,"Consumption"]) +  # Plot original Consumption series
+    ylab("% change in US consumption") +
+    autolayer(fcast.up, PI = TRUE, series = "Average increase") +  # Add a layer with forecast based on average income increase
+    autolayer(fcast.down, PI = TRUE, series = "Extreme increase") + # Add a layer with forecast based on income increase = 10
+    guides(colour = guide_legend(title = "Scenario"))
+################################################################################################
+# Transformation and Adjustments
+# Mathematical Adjustment
+elec %>%      # Use electricity demand data
+  autoplot()  # Plot to see any usual pattern
+# This plot shows that seasonal variation is unstable i.e. variance is not constant.
+# We need to stabalize this series
+
+# A good value of ?? is one which makes the size of the seasonal variation about the 
+# same across the whole series.
+# The BoxCox.lambda() function will choose a value of lambda for you.
+
+# Find lambda for elec data and stroe it as 'lambda'
+lambda <- elec %>%  # Use 'elec' data and store it as 'lamda'
+  BoxCox.lambda()   # Apply BoxCox.lambda function on the data set.
+lambda # Display the value of lambda
+
+# Look at the transformed series notice the variation across the series.
+autoplot(BoxCox(elec,lambda)) 
