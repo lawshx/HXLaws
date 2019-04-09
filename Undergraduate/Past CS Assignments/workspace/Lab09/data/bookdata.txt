@@ -1,0 +1,23 @@
+Jacobs,The Joy of Computer Science,1000
+Brooks,Data Structures and You,335
+Thompson,The Wonders of Linked Lists,523
+Raley,GUIS for Geniuses,122
+Daley,I'd Rather Be Programming,133
+Marks,Iterators are Fun,23
+Johnson,A World of Interfaces,133
+Williams,The Perfect Generic,90
+Anderson,Documentation Diaries,179
+Daley,More About Lists,44
+Rogers,Big-oh Rocks,821
+Jacobs,Exceptional Exceptions,101
+Vanderpool,Cool Queues,192
+Anderson,Inheritance Rules,391
+Connors,Stacks are Coming,90
+Matthews,The Art of Recursion,700
+Brooks,My Favorite Sorts,131
+Longwood,Searching the Internet,111
+Grant,The Death of a Database,90
+Morris,Murder in the Computer Lab,313
+Slaughter,How to Write Infinite Loops,14
+Daley,The Controversy over Shallow Cloning,30
+Miller,Referring to References,441
