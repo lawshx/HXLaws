@@ -1,0 +1,3 @@
+Player1, solution.MyRobotPlayer
+Player2, solution.MyRobotPlayer2
+Player3, solution.MyRobotPlayer3

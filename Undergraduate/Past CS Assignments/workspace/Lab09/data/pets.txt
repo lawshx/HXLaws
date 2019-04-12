@@ -1,0 +1,10 @@
+Gretel,11,9.8
+Hansel,10,11.3
+Ebony,6,13.4
+Hermione,7,13.6
+Craggy,11,12.2
+Woods,6,93.3
+Mama Kitty,10,9.3
+Sissy,10,9.8
+Misty,6,12.4
+Mouse,6,10.2
