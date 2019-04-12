@@ -285,6 +285,7 @@ answer2 <- answer %>%
 
 #Upon further research, this high frequency number was because of a snow storm in which a state of emergency was declared. 
 #In this case we will call this data point an outlier and delete it.
+callData1 <- callData1[-10500,]
 answer <- answer[-10500,]
 
 
@@ -296,19 +297,36 @@ ggplot(answer, aes(x = date, y = frequency_received)) + ylim(0,35) + geom_point(
 
 
 #This is a function to pake the process smoother. It takes the tasks we did to sort and graph.
-patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn,max = 170){
+patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn = "",max = 170){
   
   if (sub == "all"){
-    allData <- callData1 %>%
-      group_by(date = as.Date(start_time), desired = nature == nn) %>%
-      summarise(frequency_received = n()) %>%
-      filter(desired == TRUE)
-  }
-  else{
-    allData <- subset(callData1,callData1$agency == sub) %>%
-      group_by(date = as.Date(start_time), desired = nature == nn) %>%
-      summarise(frequency_received = n()) %>%
-      filter(desired == TRUE)
+    if(nn != ""){
+      allData <- callData1 %>%
+        group_by(date = as.Date(start_time), desired = nature == nn) %>%
+        summarise(frequency_received = n()) %>%
+        filter(desired == TRUE)
+    }
+    else{
+      allData <- callData1 %>%
+        group_by(date = as.Date(start_time),desired = nature) %>%
+        summarise(frequency_received = n()) %>%
+        filter(desired == TRUE)
+    }
+    
+  } else{
+    if(nn != ""){
+      allData <- subset(callData1,callData1$agency == sub) %>%
+        group_by(date = as.Date(start_time), desired = nature == nn) %>%
+        summarise(frequency_received = n()) %>%
+        filter(desired == TRUE)
+    }
+    else{
+      allData <- subset(callData1,callData1$agency == sub) %>%
+        group_by(date = as.Date(start_time), desired = nature) %>%
+        summarise(frequency_received = n()) %>%
+        filter(desired == TRUE)
+    }
+    
   }
 
   allData <- as.data.frame(allData)
@@ -316,23 +334,44 @@ patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn,max = 170){
   ggplot(allData, aes(x = date, y= frequency_received), group_by(nature)) + geom_point() + ylim(0,max)
   
 }
-
-
 patterns("GCF","CITIZEN ASSIST / SERVICE CALL")
+patterns("GCF")
 
 
+#This function will make it easier to find the frequencies by nature and department.
+freq_dept <- function(sub = c("all","GCSD","GCF","ACO","EMS"),nn, nat = ""){
+  if(sub == "all"){
+    if (nat != ""){
+      aa <- subset(callData1, callData1$nature == nat) %>%
+        group_by(date = as.Date(start_time), nature) %>%
+        summarize(freq = n())
+    }else{
+      aa <- callData1 %>%
+      group_by(date = as.Date(start_time), nature) %>%
+      summarize(freq = n())
+      }
+    
+  } else{
+    if(nat !=""){
+      aa <- subset(callData1,callData1$agency == sub & callData1$nature == nat) %>%
+        group_by(date = as.Date(start_time), nature) %>%
+        summarize(freq = n())
+    }else{
+      aa <- subset(callData1,callData1$agency == sub) %>%
+        group_by(date = as.Date(start_time), nature) %>%
+        summarize(freq = n())
+    }
+  }
+  
+  return (aa[which(aa$freq > nn),])
+}
 
 
-
-
-
-
-
-
-
-
-
-
+bb<-freq_dept("all",100)
+freq_dept("GCSD",100)
+freq_dept("GCF",100)
+freq_dept("ACO",100)
+freq_dept("EMS",100)
 
 
 
