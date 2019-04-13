@@ -258,7 +258,7 @@ GCSD<-as.data.frame(subset(callData1,callData1$agency=="GCSD"))
 #create a data frame that shows the frequency of calls by nature. 
 #These frequencies are based on the date and not the time.
 #We will only do this for the call data from the fire department.
-answer <- GCF %>%
+answer <- GCSD %>%
   group_by(date = as.Date(start_time), nature) %>%
   summarise(frequency_received = n())
 
@@ -309,8 +309,7 @@ patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn = "",max = 170){
     else{
       allData <- callData1 %>%
         group_by(date = as.Date(start_time),desired = nature) %>%
-        summarise(frequency_received = n()) %>%
-        filter(desired == TRUE)
+        summarise(frequency_received = n())
     }
     
   } else{
@@ -323,8 +322,7 @@ patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn = "",max = 170){
     else{
       allData <- subset(callData1,callData1$agency == sub) %>%
         group_by(date = as.Date(start_time), desired = nature) %>%
-        summarise(frequency_received = n()) %>%
-        filter(desired == TRUE)
+        summarise(frequency_received = n())
     }
     
   }

@@ -1,0 +1,34 @@
+---
+title: 'Forecasting Time Series Models: Problem Set 4'
+subtitle: "ARIMA models"
+author: "Hannah Laws"
+---
+```{r, warning = FALSE, message = FALSE}
+library(fpp2) # You will always load this package before analyzing any time series data.
+```
+
+### Question: 
+`mcopper`data set contains monthly copper prices in international market during 1960-2006.
+
+For the `mcopper` data:
+
+a - if necessary, find a suitable Box-Cox transformation for the data;
+b - fit a suitable ARIMA model to the transformed data using auto.arima();
+c - try some other plausible models by experimenting with the orders chosen;
+d - choose what you think is the best model and check the residual diagnostics;
+e - produce forecasts of your fitted model. Do the forecasts look reasonable?
+f - compare the results with what you would obtain using ets() (with no transformation).
+
+
+```{r}
+autoplot(mcopper)
+ggseasonplot(mcopper)
+ggsubseriesplot(mcopper)
+ggAcf(mcopper)
+Box.test(mcopper, type = "Ljung-Box")
+plot(decompose(mcopper, type = "multiplicative"))
+```
+From the initial autoplot of the dataset we see an increasing trend that  exponentially increases. The season plot does not appear to much consistency in the seasons, however it does show the increasing trend. Looking at the subseries plot it appears to be completely consistent.
+
+Interestingly the ACF plot does a decreasing trend. THe Ljung Box test confirms that this series is not white noise and that there is some sort of pattern in the dataset.
+
