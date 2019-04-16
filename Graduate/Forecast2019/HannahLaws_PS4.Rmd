@@ -32,3 +32,48 @@ From the initial autoplot of the dataset we see an increasing trend that  expone
 
 Interestingly the ACF plot does a decreasing trend. THe Ljung Box test confirms that this series is not white noise and that there is some sort of pattern in the dataset.
 
+```{r}
+log.mcopper<-log(mcopper)
+
+auto.arima(log.mcopper)
+```
+Since there is an upward trend, we need to put less emphasis by taking the log. The `auto.arima()` function then uses this to calculate the best fitting ARIMA model.
+
+Manually picking out the ARIMA model I have the option of ending up with a different model or the same model.
+```{r}
+ndiffs(log.mcopper) #confirms that there only needs to be one different in order to make the series stationary.
+
+ggtsdisplay(diff(log.mcopper)) 
+```
+From these ACF and PACF graphs, it seems like this differenced data is best fitted with a AR(2) or a MA(1). Looking at the MA(1) model:
+```{r}
+fit <-Arima(log.mcopper, order = c(2,1,0))
+summary(fit)
+fit$aicc
+```
+
+
+Compared to the `auto.arima()` choice, this model has a slightly bigger AICc value. Checking the residuals of the two models:
+```{r}
+checkresiduals(fit)
+checkresiduals(auto.arima(mcopper))
+```
+The value of the Ljung-Box test for the hand-picked model is lightly closer to zero than the `auto.arima()` model. Only the `auto.arima()` model fails to pass the Ljung-Box test for its residuals which means it actually does better at capturing the information so that the residuals are ONLY white noise. Looking at the residual histograms and ACF plots, they both seem similar. The `auto.arima()` model seems to have a more increasing trend while the manual model ARIMA(2,1,0) has the residuals more evenly distributed in the graph time series graph. 
+
+
+Now let's do some forecasting:
+```{r}
+autoplot(forecast(fit))
+autoplot(forecast(auto.arima(log.mcopper)))
+```
+Comparing both forecasting graphs, it seems that the `auto.arima()` model has a slightly bigger range of forecast than the manual model. 
+
+
+
+Looking at the ETS Model, we see that it actually does way worse than the previous two models. The AICc is way higher than the previous models, and the Ljung-Box test shows that the residuals are nowhere near being white noise. Therefore, there's a lot of information that's not being captured in this particular model.
+```{r}
+ets(mcopper)
+checkresiduals(ets(mcopper))
+autoplot(forecast(ets(mcopper)))
+```
+
