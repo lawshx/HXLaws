@@ -1,7 +1,7 @@
 ---
 title: 'Forecasting Time Series Models: Problem Set 4'
 subtitle: "ARIMA models"
-author: "Hannah Laws"
+author: "Hannah Laws, Cyrus Rattler, Evan Burrow, Mike Durrett"
 ---
 ```{r, warning = FALSE, message = FALSE}
 library(fpp2) # You will always load this package before analyzing any time series data.
@@ -12,13 +12,15 @@ library(fpp2) # You will always load this package before analyzing any time seri
 
 For the `mcopper` data:
 
-a - if necessary, find a suitable Box-Cox transformation for the data;
-b - fit a suitable ARIMA model to the transformed data using auto.arima();
-c - try some other plausible models by experimenting with the orders chosen;
-d - choose what you think is the best model and check the residual diagnostics;
-e - produce forecasts of your fitted model. Do the forecasts look reasonable?
-f - compare the results with what you would obtain using ets() (with no transformation).
 
+<ol type="a">
+<li>if necessary, find a suitable Box-Cox transformation for the data;</li>
+<li>fit a suitable ARIMA model to the transformed data using auto.arima();</li>
+<li>try some other plausible models by experimenting with the orders chosen;</li>
+<li>choose what you think is the best model and check the residual diagnostics;</li>
+<li>produce forecasts of your fitted model. Do the forecasts look reasonable?</li>
+<li>compare the results with what you would obtain using ets() (with no transformation).</li>
+</ol>
 
 ```{r}
 autoplot(mcopper)
@@ -28,52 +30,77 @@ ggAcf(mcopper)
 Box.test(mcopper, type = "Ljung-Box")
 plot(decompose(mcopper, type = "multiplicative"))
 ```
-From the initial autoplot of the dataset we see an increasing trend that  exponentially increases. The season plot does not appear to much consistency in the seasons, however it does show the increasing trend. Looking at the subseries plot it appears to be completely consistent.
 
-Interestingly the ACF plot does a decreasing trend. THe Ljung Box test confirms that this series is not white noise and that there is some sort of pattern in the dataset.
+From the initial autoplot of the dataset we see an increasing trend that  exponentially increases. The season plot does not appear to much consistency in the seasons, however it does show the increasing trend. Looking at the subseries plot it appears to be completely consistent in mean. Interestingly, there seems to be seasonality in the decomposition of the data. Also, the ACF plot shows a decreasing trend while the Ljung Box test confirms that this series is not white noise.
 
+
+Since there is an upward trend, we need to put less emphasis by taking the log. And for the sake of curiousity, a BoxCox transformation is also done on both the log and not log version of the data. The `auto.arima()` function then uses this to calculate the best fitting ARIMA model.
 ```{r}
 log.mcopper<-log(mcopper)
+BoxCox_Mcopper_log <- car::boxCoxVariable(log.mcopper)
+BoxCox_Mcopper <- car::boxCoxVariable(mcopper)
+
+BoxCox_lam<-BoxCox(mcopper, BoxCox.lambda(mcopper))
+BoxCox_lam_l<-BoxCox(log.mcopper, BoxCox.lambda(log.mcopper))
+
 
 auto.arima(log.mcopper)
+auto.arima(BoxCox_Mcopper)
+auto.arima(BoxCox_Mcopper_log)
+auto.arima(BoxCox_lam)
+auto.arima(BoxCox_lam_l)
 ```
-Since there is an upward trend, we need to put less emphasis by taking the log. The `auto.arima()` function then uses this to calculate the best fitting ARIMA model.
 
-Manually picking out the ARIMA model I have the option of ending up with a different model or the same model.
+From these different models, it seems that the `auto.arima()` model for the BoxCox transformation of the log transformation for `mcopper` works the best with the smallest AICc value. Interstingly, this model has seasonality to it on a monthly basis. Since the other models have extremely high AICc values compared to this model's value of `r round(auto.arima(BoxCox_Mcopper_log)$aicc,2)`, it makes sense to only focus on it.
+
+Manually picking out the ARIMA model using the log of the data, we have the option of ending up with a different model or the same model. The `ndiffs()` function suggests that one differencing is needed to make the series stationary and `nsdiffs()` suggests zero for seasonal differencing.
 ```{r}
-ndiffs(log.mcopper) #confirms that there only needs to be one different in order to make the series stationary.
-
-ggtsdisplay(diff(log.mcopper)) 
+ndiffs(BoxCox_Mcopper_log) #confirms that there only needs to be one different in order to make the series stationary.
+nsdiffs(BoxCox_Mcopper_log)#also confirms no SEASONAL differencing
+ggtsdisplay(diff(BoxCox_Mcopper_log)) 
 ```
-From these ACF and PACF graphs, it seems like this differenced data is best fitted with a AR(2) or a MA(1). Looking at the MA(1) model:
+
+Both the ACF and PACF have a sinusoidal pattern. From these graphs, it seems like this differenced data is best fitted with a AR(1) or a MA(1). Seasonally, there is a possibility for a AR(1) or MA(2) assuming yearly seasonality/cyclicality.
+
+Let's look at both models:
 ```{r}
-fit <-Arima(log.mcopper, order = c(2,1,0))
-summary(fit)
+fit <-Arima(BoxCox_Mcopper_log, order = c(1,1,0), seasonal = c(1,0,0))
+fit2 <-Arima(BoxCox_Mcopper_log, order = c(0,1,1), seasonal = c(1,0,0))
+fit3 <-Arima(BoxCox_Mcopper_log, order = c(1,1,0), seasonal = c(0,0,2))
+fit4 <-Arima(BoxCox_Mcopper_log, order = c(0,1,1), seasonal = c(0,0,2))
 fit$aicc
+fit2$aicc
+fit3$aicc
+fit4$aicc
 ```
 
+Compared to the `auto.arima()` choice's AICc value of `r round(fit2$aicc,2)`, the other models seem to not do any better. Therefore, the `auto.arima()` model is the best fit. 
 
-Compared to the `auto.arima()` choice, this model has a slightly bigger AICc value. Checking the residuals of the two models:
+Let's go ahead and Check the residuals of the two models to do a further comparison:
 ```{r}
-checkresiduals(fit)
-checkresiduals(auto.arima(mcopper))
+checkresiduals(auto.arima(BoxCox_Mcopper_log))
 ```
-The value of the Ljung-Box test for the hand-picked model is lightly closer to zero than the `auto.arima()` model. Only the `auto.arima()` model fails to pass the Ljung-Box test for its residuals which means it actually does better at capturing the information so that the residuals are ONLY white noise. Looking at the residual histograms and ACF plots, they both seem similar. The `auto.arima()` model seems to have a more increasing trend while the manual model ARIMA(2,1,0) has the residuals more evenly distributed in the graph time series graph. 
 
+The value of the Ljung-Box test for the auto-picked model is over the threshold to not be considered white noise which is a good thing. It means that this model has captured most of the information in the data! 
 
 Now let's do some forecasting:
 ```{r}
-autoplot(forecast(fit))
-autoplot(forecast(auto.arima(log.mcopper)))
+autoplot(forecast(auto.arima(BoxCox_Mcopper_log)))
 ```
-Comparing both forecasting graphs, it seems that the `auto.arima()` model has a slightly bigger range of forecast than the manual model. 
+
+This seems like a fairly small range of forecast both for 80% and 95% confidence.
 
 
 
-Looking at the ETS Model, we see that it actually does way worse than the previous two models. The AICc is way higher than the previous models, and the Ljung-Box test shows that the residuals are nowhere near being white noise. Therefore, there's a lot of information that's not being captured in this particular model.
+Looking at the ETS Model, we see that it actually does way worse than the previous model. The AICc is way higher than the previous, and the Ljung-Box test shows that the residuals are nowhere near being white noise. Therefore, there's a lot of information that's not being captured in this particular model. The `accuracy()` function also confirms how badly the ETS model does compared to the seasonal ARIMA model. 
 ```{r}
 ets(mcopper)
 checkresiduals(ets(mcopper))
 autoplot(forecast(ets(mcopper)))
+
+
+accuracy(ets(mcopper))
+accuracy(auto.arima(BoxCox_Mcopper_log))
 ```
 
+In short, the seasonal ARIMA model--ARIMA(0,1,1)(1,0,0)[12]--does the best in forecasting when looking at the AICc and RMSE values comparitively to the ETS model.
