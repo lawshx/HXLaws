@@ -298,7 +298,7 @@ ggplot(answer, aes(x = date, y = frequency_received)) + ylim(0,35) + geom_point(
 ####################################################################################################
 
 
-#This is a function to pake the process smoother. It takes the tasks we did to sort and graph.
+#This is a function to make the process smoother. It takes the tasks we did to sort and graph.
 patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn = "",max = 170){
   
   if (sub == "all"){
