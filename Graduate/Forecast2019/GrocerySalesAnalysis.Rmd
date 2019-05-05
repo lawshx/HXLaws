@@ -1,5 +1,5 @@
 ---
-title: "Grocery Store Sales Time Series Analysis"
+title: "Transportation of Goods"
 author: "Hannah Laws"
 date: "April 8, 2019"
 output: html_document
@@ -10,41 +10,127 @@ knitr::opts_chunk$set(echo = TRUE)
 library(fpp2)
 library(dplyr)
 library(seasonal)
-d<-read.csv("RSGCSN.csv")
-# https://fred.stlouisfed.org/series/RSGCSN
+library(tseries)
+library(urca)
+m<-read.csv("fredgraph.csv")
+# https://fred.stlouisfed.org/series
 ```
 
 
 
-First, convert the series into a time series so that we may begin processing the data.
+With the rise in online shopping, the different methods of transporting goods has undergone changes due to increased demand. The different methods of transportation look into international travel over seas, by plane, by truck, and by train.
 ```{r}
 #cleaning up the data
-td<-ts(d$RSGCSN, frequency = 12, start = c(1992,1))
+ts_w<-ts(m$WATERBORNED11_NBD20000101, frequency = 12, start = c(2000,1))
+ts_a<-ts(m$AIRRTMFMD11_NBD20000101, frequency = 12, start = c(2000,1))
+ts_t<-ts(m$TRUCKD11_NBD20000101, frequency = 12, start = c(2000,1))
+ts_r<-ts(m$RAILFRTCARLOADSD11_NBD20000101, frequency = 12, start = c(2000,1))
 
-autoplot(td)
-ggseasonplot(td)
-ggsubseriesplot(td)
-ggAcf(td)
-Box.test(td,type = "Ljung-Box")
-plot(decompose(td, type = "additive"))
+
+
+ts_w_train <- window(ts_w, start = 2000, end = 2013)
+ts_a_train <- window(ts_a, start = 2000, end = 2013)
+ts_t_train <- window(ts_t, start = 2000, end = 2013)
+ts_r_train <- window(ts_r, start = 2000, end = 2013)
 ```
-The very first graph is of the original data and shows a pronounced positive trend. This graph does not show the series having seasonality, but looking at the second plot, we see the seasons being yearly as well as the increase in revenue over the years. With the subseries plot, there seems to be a fair amount of variability in each month. The ACF plot confirms the upward trend again. The Ljung-Box test shows that the series is not white noise. And the decomposed graph table shows all the different components of the time series and thus confirms the upward trend and seasonality.
 
 
-So we will need to take the log of the series in order to dampen the trend and then also adjust for the seasonality.
+
+
 ```{r}
-adj_td<- seas(td,x11 = "")
+autoplot(ts_w, ylab = "Index") + autolayer(ts_w) + autolayer(ts_a) + autolayer(ts_t) + autolayer(ts_r) + labs(colour = "transport") + scale_color_manual(labels = c("Plane","Railway","Truck","Ship"), values = c(1,2,3,4))
+ggsubseriesplot(ts_w)
+ggsubseriesplot(ts_a)
+ggsubseriesplot(ts_t)
+ggsubseriesplot(ts_r)
+ggAcf(ts_w)
+ggAcf(ts_a)
+ggAcf(ts_t)
+ggAcf(ts_r)
+Box.test(ts_w,type = "Ljung-Box")
+Box.test(ts_a,type = "Ljung-Box")
+Box.test(ts_t,type = "Ljung-Box")
+Box.test(ts_r,type = "Ljung-Box")
+plot(decompose(ts_w, type = "additive"))
+plot(decompose(ts_a, type = "additive"))
+plot(decompose(ts_t, type = "additive"))
+plot(decompose(ts_r, type = "additive"))
+```
+While it seems that the shipments by sea and by air have ACF plots that rapidly decrease to 0, the truck and railway ACF plots decrease more slowly which means they are not stationary.
 
-autoplot(td, series = "original") + 
-  autolayer(trendcycle(adj_td), series = "trend") + 
-  autolayer(seasadj(adj_td), series = "seasons")
+```{r}
+ndiffs(ts_w_train)
+ndiffs(ts_a_train)
+ndiffs(ts_t_train)
+ndiffs(ts_r_train)
+
+nsdiffs(ts_w_train)
+nsdiffs(ts_a_train)
+nsdiffs(ts_t_train)
+nsdiffs(ts_r_train)
+```
+With `ndiffs()` it seems all the time series need one differencing. But no seasonal differencing is needed.
+
+```{r}
+autofit <- auto.arima(ts_w_train)
+autofit2 <- auto.arima(ts_a_train)
+autofit3 <- auto.arima(ts_t_train)
+autofit4 <- auto.arima(ts_r_train)
+```
+
+```{r}
+ggtsdisplay(diff(ts_w_train)) # either AR(2) or MA(1)
+ggtsdisplay(diff(ts_a_train)) # either AR(1) or MA(1)
+ggtsdisplay(diff(ts_t_train)) # AR(1) or MA(1)
+ggtsdisplay(diff(ts_r_train)) #AR or MA(1)
+```
+
+```{r}
+manfit <- Arima(ts_w_train, order = c(2,1,0))
+manfit1 <- Arima(ts_w_train, order = c(0,1,1))
+manfit2 <- Arima(ts_a_train, order = c(1,1,0))
+manfit22 <- Arima(ts_a_train, order = c(0,1,1))
+manfit3 <- Arima(ts_t_train, order = c(1,1,0))
+manfit33 <- Arima(ts_t_train, order = c(0,1,1))
+manfit4 <- Arima(ts_r_train, order = c(1,1,0))
+manfit44 <- Arima(ts_r_train, order = c(0,1,1))
+```
+
+```{r}
+autofit$aicc < manfit$aicc
+autofit$aicc < manfit1$aicc
+autofit2$aicc < manfit2$aicc
+autofit2$aicc < manfit22$aicc
+autofit3$aicc < manfit3$aicc
+autofit3$aicc < manfit33$aicc
+autofit4$aicc < manfit4$aicc
+autofit4$aicc < manfit44$aicc
+```
+Overall, it seems that the `auto.arima()` function picked most of the models with the lowest AICc.
 
 
-adj_td_adj <- seasonal(adj_td)
-ggsubseriesplot(adj_td_adj)
 
 
-autoplot(adj_td)
+```{r}
+checkresiduals(manfit1)
+checkresiduals(autofit2)
+checkresiduals(autofit3)
+checkresiduals(autofit4)
+```
+THe first Ljung-Box test does not pass--it's white noise. The others do pass and are white noise.
 
+
+```{r}
+test_w <- window(ts_w, start = 2013)
+test_a <- window(ts_a, start = 2013)
+test_t <- window(ts_t, start = 2013)
+test_r <- window(ts_r, start = 2013)
+
+
+
+accuracy(forecast(manfit1, h = 72), test_w)
+accuracy(forecast(autofit2, h = 72), test_a)
+accuracy(forecast(autofit3, h = 72), test_t)
+accuracy(forecast(autofit4, h = 72), test_r)
 ```
 
