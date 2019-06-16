@@ -10,7 +10,7 @@ import pandas as pd
 
 file = "C:/Users/lawsh/Source/Repos/HXLaws/Graduate/GuilfordProject2019/callsForServiceUpdated.csv"
 
-TheData = pd.read_csv(file)
+TheData = pd.read_csv(file, low_memory = False)
 TheData.columns.values #understanding the colnames.
 
 #Since the data in the cancelled and rptonly are seen as booleans, we subset all the data where the calls were not cancelled and are not reports.
