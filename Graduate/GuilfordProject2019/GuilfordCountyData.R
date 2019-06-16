@@ -150,6 +150,8 @@ colSums(is.na(callData1[which(callData1$agency=="GCF"),c(5,6,7,9,14,19)]))
 colSums(is.na(callData1[which(callData1$agency=="GCSD"),c(5,6,7,9,14,19)]))
 
 clean_time <- proc.time() - ptm #time is recorded in seconds, overall the cleaning process takes a little over 2 minutes.
+
+
 #############################################MODELLING DATA###################################################### 
 #include in model:
 #-lat and long
@@ -166,90 +168,90 @@ callData1$callsource <- as.factor(callData1$callsource)
 callData1$nature <- as.factor(callData1$nature)
 
 
+write.csv(callData1,"cleanedData.csv")#export clean data to use in shiny application.
 
 
-
-#Model Testing
-ptm <- proc.time()
-mod <-lm(duration ~ nature + agency + callsource + lat + long, data = callData1)
-mod1_time <- proc.time() - ptm
-summary(mod)
-
-ptm <- proc.time()
-mod2 <- lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + 
-             secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + 
-             secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
-mod2_time <- proc.time() - ptm
-summary(mod2)
-
-ptm <- proc.time()
-mod3 <- lm(duration ~ nature + agency + callsource + lat + long + 
-             secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + 
-             secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
-             secstr2lc, data = callData1)
-mod3_time <- proc.time() - ptm
-summary(mod3)
-
-
-rm(mod2,mod) #we don't  actually need to keep these variables
-#these were merely confirming a suspicion 
-
-#the third model took barely 3 minutes to complete.
-#it should be noted that the seconds to ___ account for the accuracy in model 2, so it makes sense that they play the biggest role in the model.
-#since there is no improvement from model 2 to model 3, this leads to the suspicion that only the seconds to ___ matter in the duration of a call time.
-
-ptm <- proc.time()
-mod4 <- step(lm(duration ~ secs2rt + secs2di + secs2en + 
-                  secs2ar + secs2tr + secs2lc + secsdi2en + 
-                  secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
-                  secstr2lc, data = callData1), direction = "forward")
-proc.time() - ptm
-
-ptm <- proc.time()
-mod5 <- step(lm(duration ~ secs2rt + secs2di + secs2en + 
-                  secs2ar + secs2tr + secs2lc + secsdi2en + 
-                  secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
-                  secstr2lc, data = callData1), direction = "backward")
-proc.time() - ptm
-
-rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables with greater significance.
-#apparently, there are none that are more important than the others.
-
-
-ptm <- proc.time()
-mod6 <- step(lm(duration ~ nature + agency + callsource + lat + 
-                  long + secs2rt + secs2di + secs2en + secs2ar + 
-                  secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + 
-                  secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
-proc.time() - ptm
-
-ptm <- proc.time()
-mod7 <- step(lm(duration ~ nature + agency + callsource + lat + 
-                  long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + 
-                  secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + 
-                  secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
-proc.time() - ptm
-#mod 7 couldn't be completed because of computer's capability.
-#HOWEVER, even using a forwards or backwards regression shows that the seconds to ___ are the most important variables.
-#There is no change in adj R^2 once seconds to ___ variables are introduced.
-
-
-##NOTE: when these models are made, they are about 2 ~ 3 GB in size. 
-#We'll remove the models to free up space.
-rm(mod3, mod4, mod5, mod6, mod7)
-
-
-
-callData2 <- callData1[,c("duration","agency","callsource","lat","long",
-                          "secs2rt","secs2di","secs2en","secs2ar","secs2tr","secs2lc",
-                          "secsdi2en","secsdi2ar","secsar2tr","secsar2lc","secsrt2dsp",
-                          "secstr2lc")]
-####CREATING DUMMY VARIABLES#####
-
-for (i in 1:nrow(NATURE)){
-  callData2 <- cbind(callData2,NATRUE[i,] = ifelse( callData1$nature == paste(NATURE[i,]), 1, 0))
-}
-#This is a very taxing process and may not be worth it.
+# #Model Testing
+# ptm <- proc.time()
+# mod <-lm(duration ~ nature + agency + callsource + lat + long, data = callData1)
+# mod1_time <- proc.time() - ptm
+# summary(mod)
+# 
+# ptm <- proc.time()
+# mod2 <- lm(duration ~ secs2rt + secs2di + secs2en + secs2ar + 
+#              secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + 
+#              secsar2lc + secsrt2dsp + secstr2lc, data = callData1)
+# mod2_time <- proc.time() - ptm
+# summary(mod2)
+# 
+# ptm <- proc.time()
+# mod3 <- lm(duration ~ nature + agency + callsource + lat + long + 
+#              secs2rt + secs2di + secs2en + secs2ar + secs2tr + secs2lc + 
+#              secsdi2en + secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
+#              secstr2lc, data = callData1)
+# mod3_time <- proc.time() - ptm
+# summary(mod3)
+# 
+# 
+# rm(mod2,mod) #we don't  actually need to keep these variables
+# #these were merely confirming a suspicion 
+# 
+# #the third model took barely 3 minutes to complete.
+# #it should be noted that the seconds to ___ account for the accuracy in model 2, so it makes sense that they play the biggest role in the model.
+# #since there is no improvement from model 2 to model 3, this leads to the suspicion that only the seconds to ___ matter in the duration of a call time.
+# 
+# ptm <- proc.time()
+# mod4 <- step(lm(duration ~ secs2rt + secs2di + secs2en + 
+#                   secs2ar + secs2tr + secs2lc + secsdi2en + 
+#                   secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
+#                   secstr2lc, data = callData1), direction = "forward")
+# proc.time() - ptm
+# 
+# ptm <- proc.time()
+# mod5 <- step(lm(duration ~ secs2rt + secs2di + secs2en + 
+#                   secs2ar + secs2tr + secs2lc + secsdi2en + 
+#                   secsdi2ar + secsar2tr + secsar2lc + secsrt2dsp + 
+#                   secstr2lc, data = callData1), direction = "backward")
+# proc.time() - ptm
+# 
+# rm(mod4,mod5) #this was merely to see if there were seconds to ___ variables with greater significance.
+# #apparently, there are none that are more important than the others.
+# 
+# 
+# ptm <- proc.time()
+# mod6 <- step(lm(duration ~ nature + agency + callsource + lat + 
+#                   long + secs2rt + secs2di + secs2en + secs2ar + 
+#                   secs2tr + secs2lc + secsdi2en + secsdi2ar + secsar2tr + 
+#                   secsar2lc + secsrt2dsp + secstr2lc, data = callData1), direction = "forward")
+# proc.time() - ptm
+# 
+# ptm <- proc.time()
+# mod7 <- step(lm(duration ~ nature + agency + callsource + lat + 
+#                   long + secs2rt + secs2di + secs2en + secs2ar + secs2tr + 
+#                   secs2lc + secsdi2en + secsdi2ar + secsar2tr + secsar2lc + 
+#                   secsrt2dsp + secstr2lc, data = callData1), direction = "backward")
+# proc.time() - ptm
+# #mod 7 couldn't be completed because of computer's capability.
+# #HOWEVER, even using a forwards or backwards regression shows that the seconds to ___ are the most important variables.
+# #There is no change in adj R^2 once seconds to ___ variables are introduced.
+# 
+# 
+# ##NOTE: when these models are made, they are about 2 ~ 3 GB in size. 
+# #We'll remove the models to free up space.
+# rm(mod3, mod4, mod5, mod6, mod7)
+# 
+# 
+# 
+# callData2 <- callData1[,c("duration","agency","callsource","lat","long",
+#                           "secs2rt","secs2di","secs2en","secs2ar","secs2tr","secs2lc",
+#                           "secsdi2en","secsdi2ar","secsar2tr","secsar2lc","secsrt2dsp",
+#                           "secstr2lc")]
+# ####CREATING DUMMY VARIABLES#####
+# 
+# for (i in 1:nrow(NATURE)){
+#   callData2 <- cbind(callData2,NATRUE[i,] = ifelse( callData1$nature == paste(NATURE[i,]), 1, 0))
+# }
+# #This is a very taxing process and may not be worth it.
 
 
 ########################################DEEP DIVE INTO DATA#################################################
@@ -296,7 +298,7 @@ ggplot(answer, aes(x = date, y = frequency_received)) + ylim(0,35) + geom_point(
 ####################################################################################################
 
 
-#This is a function to pake the process smoother. It takes the tasks we did to sort and graph.
+#This is a function to make the process smoother. It takes the tasks we did to sort and graph.
 patterns<-function(sub = c("all","GCSD","GCF","ACO","EMS"),nn = "",max = 170){
   
   if (sub == "all"){
