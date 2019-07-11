@@ -23,3 +23,21 @@ usable <- cbind(the_data,mob,age)
 
 hist(usable$mob)
 hist(as.numeric(usable$age))
+
+
+
+library(sqldf)
+sqldf('SELECT * FROM gender_overall_2 WHERE NEWID IN(
+      SELECT NEWID FROM gender_overall_2 WHERE NEwID NOT IN (SELECT NEwID FROM pwh_analysis_1))')
+
+
+
+unique(gender_overall_2)
+unique(pwh_analysis_1)
+
+which(duplicated(gender_overall_2$NEWID))
+which(duplicated(gender_overall_2$DOB))
+which(duplicated(pwh_analysis_1$NEWID))
+
+
+
