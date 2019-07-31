@@ -2,15 +2,28 @@
 
 import datetime #to find the date
 import pandas #create dataframe from which to simply copy and paste into google sheets
-from selenium import webdriver #webscraping tool to get to the webpages
-from selenium.webdriver.common.keys import Keys #this is so that key shortcuts can be utilized
+from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 #must specify where the driver is to open browser
 path = 'C:\\Users\\lawsh\\Downloads\\geckodriver-v0.24.0-win64\\geckodriver' 
 
 #using Firefox as browser
-browser = webdriver.Firefox(executable_path=path)
-browser.get('https://www.google.com')
+#To speed up browser, manually stop page load after all needed information is loaded.
+
+#First set page loading strategy to none so that it can be set manually.
+capa = DesiredCapabilities.FIREFOX
+capa["pageLoadStrategy"] = "none"
+
+#define the page load strategy and driver path while setting up browser.
+browser = webdriver.Firefox(desired_capabilities=capa, executable_path= path)
+
+#tell the driver to wait for 20 seconds to load desired information.
+#the next steps to stop the page load will be in the for loop below.
+wait = WebDriverWait(browser, 20)
 
 
 
@@ -33,12 +46,20 @@ WeatherData = pandas.DataFrame([0],index = ["a"])
 
 #Find all the parts of the webpage that may contain the high and low temperatures
 for station in range(len(stations)):
-    browser.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 't') #open new tab in browser
+    
+    
+    #open browser to link inside .get().
     browser.get(stations_links[station])
+    
+    #only wait for the page to load to the specific CSS header thing in ''s.
+    wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'html.js.flexbox.flexboxlegacy.canvas.canvastext.webgl.touch.geolocation.postmessage.no-websqldatabase.indexeddb.hashchange.history.draganddrop.websockets.rgba.hsla.multiplebgs.backgroundsize.borderimage.borderradius.boxshadow.textshadow.opacity.cssanimations.csscolumns.cssgradients.no-cssreflections.csstransforms.csstransforms3d.csstransitions.fontface.generatedcontent.video.audio.localstorage.sessionstorage.webworkers.applicationcache.svg.inlinesvg.smil.svgclippaths body.omnibus.page app city-tenday city-tenday-layout div.content-wrap.right-side-nav div#inner-wrap section#inner-content.inner-content.mast-wrap div.city-body div.row.city-forecast div.small-12.columns.has-sidebar div.row div.small-12.columns div.region-content-forecast city-tenday-forecast div.row forecast-graph div.weather-graph div.plots.has-header forecast-graph-plot div.plot-wrap div.plot.n0.plot-header div.flot-header')))
+    
+    #stop browser from loading further.
+    browser.execute_script("window.stop();")
+
+    #obtain information on temperature and precipitaion
     Temps = browser.find_elements_by_css_selector('span.test-false.wu-unit.wu-unit-temperature')
     Precip = browser.find_elements_by_css_selector('span.wu-value.wu-value-to')
-    len(Precip)
-    len(Temps)
 
     #storing all values found in webscraper as a list.
     t = [x.text for x in Temps]
@@ -120,7 +141,8 @@ for station in range(len(stations)):
     WeatherData = WeatherData.append([precip])
     WeatherData.rename(index = {0:stations[station] + '_precip'}, inplace = True)
     WeatherData # double check that rows are named correctly
-    browser.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'w') 
+    #browser.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'w')
+    #browser.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 't') #open new tab in browser
 
 browser.close()
 #exporting dataframe to a specific location
