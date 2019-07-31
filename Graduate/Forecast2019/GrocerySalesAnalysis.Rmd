@@ -1,7 +1,7 @@
 ---
 title: "Transportation of Goods"
 author: "Hannah Laws"
-date: "April 8, 2019"
+date: "May 5, 2019"
 output: html_document
 ---
 
@@ -21,10 +21,16 @@ m<-read.csv("fredgraph.csv")
 With the rise in online shopping, the different methods of transporting goods has undergone changes due to increased demand. The different methods of transportation look into international travel over seas, by plane, by truck, and by train.
 ```{r}
 #cleaning up the data
-ts_w<-ts(m$WATERBORNED11_NBD20000101, frequency = 12, start = c(2000,1))
-ts_a<-ts(m$AIRRTMFMD11_NBD20000101, frequency = 12, start = c(2000,1))
-ts_t<-ts(m$TRUCKD11_NBD20000101, frequency = 12, start = c(2000,1))
-ts_r<-ts(m$RAILFRTCARLOADSD11_NBD20000101, frequency = 12, start = c(2000,1))
+# ts_w<-ts(m$WATERBORNED11_NBD20000101, frequency = 12, start = c(2000,1))
+# ts_a<-ts(m$AIRRTMFMD11_NBD20000101, frequency = 12, start = c(2000,1))
+# ts_t<-ts(m$TRUCKD11_NBD20000101, frequency = 12, start = c(2000,1))
+# ts_r<-ts(m$RAILFRTCARLOADSD11_NBD20000101, frequency = 12, start = c(2000,1))
+
+
+ts_w<-car::boxCoxVariable(log(ts(m$WATERBORNED11_NBD20000101, frequency = 12, start = c(2000,1))))
+ts_a<-car::boxCoxVariable(log(ts(m$AIRRTMFMD11_NBD20000101, frequency = 12, start = c(2000,1))))
+ts_t<-car::boxCoxVariable(log(ts(m$TRUCKD11_NBD20000101, frequency = 12, start = c(2000,1))))
+ts_r<-car::boxCoxVariable(log(ts(m$RAILFRTCARLOADSD11_NBD20000101, frequency = 12, start = c(2000,1))))
 
 
 
@@ -32,12 +38,20 @@ ts_w_train <- window(ts_w, start = 2000, end = 2013)
 ts_a_train <- window(ts_a, start = 2000, end = 2013)
 ts_t_train <- window(ts_t, start = 2000, end = 2013)
 ts_r_train <- window(ts_r, start = 2000, end = 2013)
+
+
+# 
+# ts_w_train <- car::boxCoxVariable(log(ts_w_train))
+# ts_a_train <- car::boxCoxVariable(log(ts_a_train))
+# ts_t_train <- car::boxCoxVariable(log(ts_t_train))
+# ts_r_train <- car::boxCoxVariable(log(ts_r_train))
 ```
 
 
 
 
 ```{r}
+
 autoplot(ts_w, ylab = "Index") + autolayer(ts_w) + autolayer(ts_a) + autolayer(ts_t) + autolayer(ts_r) + labs(colour = "transport") + scale_color_manual(labels = c("Plane","Railway","Truck","Ship"), values = c(1,2,3,4))
 ggsubseriesplot(ts_w)
 ggsubseriesplot(ts_a)
@@ -81,24 +95,22 @@ autofit4 <- auto.arima(ts_r_train)
 ```{r}
 ggtsdisplay(diff(ts_w_train)) # either AR(2) or MA(1)
 ggtsdisplay(diff(ts_a_train)) # either AR(1) or MA(1)
-ggtsdisplay(diff(ts_t_train)) # AR(1) or MA(1)
-ggtsdisplay(diff(ts_r_train)) #AR or MA(1)
+ggtsdisplay(diff(ts_t_train)) # AR(2) or MA(1)
+ggtsdisplay(diff(ts_r_train)) #AR(1)
 ```
 
 ```{r}
-manfit <- Arima(ts_w_train, order = c(2,1,0))
-manfit1 <- Arima(ts_w_train, order = c(0,1,1))
+manfit <- Arima(ts_w_train, order = c(4,0,0))
 manfit2 <- Arima(ts_a_train, order = c(1,1,0))
-manfit22 <- Arima(ts_a_train, order = c(0,1,1))
+manfit22 <- Arima(ts_a_train, order = c(0,1,2))
 manfit3 <- Arima(ts_t_train, order = c(1,1,0))
 manfit33 <- Arima(ts_t_train, order = c(0,1,1))
-manfit4 <- Arima(ts_r_train, order = c(1,1,0))
-manfit44 <- Arima(ts_r_train, order = c(0,1,1))
+manfit4 <- Arima(ts_r_train, order = c(2,1,0))
+manfit44 <- Arima(ts_r_train, order = c(0,1,2))
 ```
 
 ```{r}
 autofit$aicc < manfit$aicc
-autofit$aicc < manfit1$aicc
 autofit2$aicc < manfit2$aicc
 autofit2$aicc < manfit22$aicc
 autofit3$aicc < manfit3$aicc
@@ -112,12 +124,12 @@ Overall, it seems that the `auto.arima()` function picked most of the models wit
 
 
 ```{r}
-checkresiduals(manfit1)
-checkresiduals(autofit2)
-checkresiduals(autofit3)
-checkresiduals(autofit4)
+checkresiduals(autofit)
+checkresiduals(manfit2)
+checkresiduals(manfit33)
+checkresiduals(manfit4)
 ```
-THe first Ljung-Box test does not pass--it's white noise. The others do pass and are white noise.
+white noise.
 
 
 ```{r}
@@ -128,9 +140,42 @@ test_r <- window(ts_r, start = 2013)
 
 
 
-accuracy(forecast(manfit1, h = 72), test_w)
-accuracy(forecast(autofit2, h = 72), test_a)
-accuracy(forecast(autofit3, h = 72), test_t)
-accuracy(forecast(autofit4, h = 72), test_r)
+accuracy(forecast(autofit, h = 72), test_w)
+accuracy(forecast(manfit2, h =72), test_a)
+accuracy(forecast(manfit33, h = 72), test_t)
+accuracy(forecast(manfit4, h = 72), test_r)
 ```
+
+```{r}
+
+
+autoplot(ts_w_train) + autolayer(forecast(autofit, h = 72)) + autolayer(ts_w)
+autoplot(ts_a_train) + autolayer(forecast(manfit2, h = 72)) + autolayer(ts_a)
+autoplot(ts_t_train) + autolayer(forecast(manfit33, h = 72)) + autolayer(ts_t)
+autoplot(ts_r_train) + autolayer(forecast(manfit4, h = 72)) + autolayer(ts_r)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
