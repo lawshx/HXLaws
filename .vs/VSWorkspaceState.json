@@ -1,8 +1,9 @@
 {
   "ExpandedNodes": [
     "",
+    "\\CARE",
+    "\\CARE\\AppliedAnalyticsProject_PartwayHome",
     "\\Graduate",
-    "\\Graduate\\AppliedAnalyticsProject_PartwayHome",
     "\\Side Projects"
   ],
   "SelectedNode": "\\Side Projects\\weather_web_scraping.py",

@@ -20,11 +20,11 @@ capa["pageLoadStrategy"] = "none"
 
 #define the page load strategy and driver path while setting up browser.
 browser = webdriver.Firefox(desired_capabilities=capa, executable_path= path)
+#browser = webdriver.Firefox(executable_path = path)
 
 #tell the driver to wait for 20 seconds to load desired information.
 #the next steps to stop the page load will be in the for loop below.
 wait = WebDriverWait(browser, 20)
-
 
 
 #These are the URLs for each of the 10-day forecasts of the requested weather stations
@@ -43,13 +43,15 @@ stations_links = [KCLT,KGSO,KRDU,KINT]
 
 #Create dataframe with recorded temperatures
 WeatherData = pandas.DataFrame([0],index = ["a"])
+#browser.get('https://www.google.com/')
 
 #Find all the parts of the webpage that may contain the high and low temperatures
 for station in range(len(stations)):
     
-    
     #open browser to link inside .get().
+    browser.maximize_window()    
     browser.get(stations_links[station])
+    
     
     #only wait for the page to load to the specific CSS header thing in ''s.
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'html.js.flexbox.flexboxlegacy.canvas.canvastext.webgl.touch.geolocation.postmessage.no-websqldatabase.indexeddb.hashchange.history.draganddrop.websockets.rgba.hsla.multiplebgs.backgroundsize.borderimage.borderradius.boxshadow.textshadow.opacity.cssanimations.csscolumns.cssgradients.no-cssreflections.csstransforms.csstransforms3d.csstransitions.fontface.generatedcontent.video.audio.localstorage.sessionstorage.webworkers.applicationcache.svg.inlinesvg.smil.svgclippaths body.omnibus.page app city-tenday city-tenday-layout div.content-wrap.right-side-nav div#inner-wrap section#inner-content.inner-content.mast-wrap div.city-body div.row.city-forecast div.small-12.columns.has-sidebar div.row div.small-12.columns div.region-content-forecast city-tenday-forecast div.row forecast-graph div.weather-graph div.plots.has-header forecast-graph-plot div.plot-wrap div.plot.n0.plot-header div.flot-header')))
@@ -67,13 +69,15 @@ for station in range(len(stations)):
     
 
     pp = []
-
+    #Grabing values that are less than 15
+    #Assuming that 15 inches of precipitation is a good threshold to not store an unwanted value.
     for i in range(len(Precip)):
         if p[i]=="":
-            print("nope")
+            continue
         elif float(p[i]) <= 15.0:
             print(p[i])
             pp.append(p[i])
+
     #empty list to store non-empty values
     s = []
 
@@ -130,8 +134,6 @@ for station in range(len(stations)):
     else:
         print("error:Weather recording not needed today. DOW is " + DOW) 
 
-
-
     
     #For easy naming convention each row is either the high or low temperatures for a specific weather station.
     WeatherData = WeatherData.append([high])
@@ -141,9 +143,14 @@ for station in range(len(stations)):
     WeatherData = WeatherData.append([precip])
     WeatherData.rename(index = {0:stations[station] + '_precip'}, inplace = True)
     WeatherData # double check that rows are named correctly
-    #browser.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 'w')
-    #browser.find_element_by_tag_name('body').send_keys(Keys.COMMAND + 't') #open new tab in browser
+    
+    #Creating new tab to open next web link.
+    browser.execute_script('''window.open("about:blank", "_blank");''') #open new tab
+    browser.switch_to_window(browser.window_handles[station + 1]) #switch to that new tab
+    
+    
+#close out all tabs and browser window
+browser.quit() 
 
-browser.close()
 #exporting dataframe to a specific location
 WeatherData.to_csv("C:\\Users\\lawsh\\Downloads\\WeatherData.csv")
