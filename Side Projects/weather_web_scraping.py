@@ -125,7 +125,7 @@ for station in range(len(stations)):
             high.append(s[i][:2])
             low.append(s[i][-2:])
             precip.append(pp[i - 1])
-    elif DOW == 1:
+    elif DOW == 3:
         for i in range(1,2):
             print(s[i])
             high.append(s[i][:2])
@@ -150,7 +150,7 @@ for station in range(len(stations)):
     
     
 #close out all tabs and browser window
-browser.quit() 
+#browser.quit() 
 
 #exporting dataframe to a specific location
 WeatherData.to_csv("C:\\Users\\lawsh\\Downloads\\WeatherData.csv")
