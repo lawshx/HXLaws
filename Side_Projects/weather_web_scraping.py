@@ -9,6 +9,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 import sys
 
+
 #must specify where the driver is to open browser
 path = 'C:\\Users\\lawsh\\Downloads\\geckodriver-v0.24.0-win64\\geckodriver'
 
@@ -138,5 +139,5 @@ else:
 browser.quit() 
 
 #exporting dataframe to a specific location
-#WeatherData.to_csv(filepath)
+WeatherData.to_csv(filepath)
 

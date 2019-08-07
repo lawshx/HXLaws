@@ -1,11 +1,8 @@
 {
   "ExpandedNodes": [
     "",
-    "\\CARE",
-    "\\CARE\\AppliedAnalyticsProject_PartwayHome",
-    "\\Graduate",
-    "\\Side Projects"
+    "\\Side_Projects"
   ],
-  "SelectedNode": "\\Side Projects\\weather_web_scraping.py",
+  "SelectedNode": "\\Side_Projects\\weather_web_scraping.py",
   "PreviewInSolutionExplorer": false
 }
