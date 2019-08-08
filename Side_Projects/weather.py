@@ -17,25 +17,25 @@ soup = BS(r.text,features = 'html.parser')
 #finding and storing the necessary raw information
 
 #date by the hour
-date = soup.find('time-layout').find_all('start-valid-time')
+date = soup.find('time-layout').select('start-valid-time')
 
 
-HI = soup.find('temperature', type = re.compile('heat index'))
+HI = soup.find('temperature', type = re.compile('heat index')).select('value')
 
 #hourly temperature
-hourly_temp = soup.find('temperature', type = 'hourly')
+hourly_temp = soup.find('temperature').select('value')
 
 #wind direction in degrees
-wind = soup.find('direction', type = 'wind')
+wind = soup.find('direction').select('value')
 
 #precipitation by the hour
-hourly_precip = soup.find('hourly-qpf')
+hourly_precip = soup.find('hourly-qpf').select('value')
 
-WeatherData = pd.DataFrame([list(date)])
-WeatherData = WeatherData.append([list(HI)])
-WeatherData = WeatherData.append([list(hourly_temp)])
-WeatherData = WeatherData.append([list(hourly_precip)])
-WeatherData = WeatherData.append([list(wind)])
+WeatherData = pd.DataFrame([date])
+WeatherData = WeatherData.append([HI])
+WeatherData = WeatherData.append([hourly_temp])
+WeatherData = WeatherData.append([hourly_precip])
+WeatherData = WeatherData.append([wind])
 
 tidyWeather = WeatherData.transpose()
 tidyWeather.columns = ['DateTime','Heat Index', 'HrlyTemp', 'HrlyPrecip', 'Wind']
