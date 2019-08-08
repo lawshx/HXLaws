@@ -14,13 +14,25 @@ soup = BS(r.text,features = 'html.parser')
 #print(soup.prettify())
 
 #finding and storing the necessary raw information
+
+#date by the hour
 date = soup.find('time-layout')
 
+
 HI = soup.find('temperature', type = re.compile('heat index'))
+
+#hourly temperature
 hourly_temp = soup.find('temperature', type = 'hourly')
+
+#wind direction in degrees
 wind = soup.find('direction', type = 'wind')
+
+#precipitation by the hour
 hourly_precip = soup.find('hourly-qpf')
 
 #printing values without tags
 print(list(hourly_precip)[8].get_text())
-print(list(date)[8].get_text())
+#print(list(date)[8].get_text())
+print(len(list(hourly_temp)))
+print(len(date.get_text()))
+print(len(list(hourly_temp)))
