@@ -16,7 +16,7 @@ soup = BS(r.text,features = 'html.parser')
 #finding and storing the necessary raw information
 
 #date by the hour
-date = soup.find('time-layout')
+date = soup.find('time-layout').find_all('start-valid-time')
 
 
 HI = soup.find('temperature', type = re.compile('heat index'))
@@ -34,5 +34,12 @@ hourly_precip = soup.find('hourly-qpf')
 print(list(hourly_precip)[8].get_text())
 #print(list(date)[8].get_text())
 print(len(list(hourly_temp)))
-print(len(date.get_text()))
+#print(len(list(date)))
 print(len(list(hourly_temp)))
+#print(list(date)[0].extract().get_text())
+#print(list(date)[1].extract().get_text())
+#print(list(date)[2].extract().get_text())
+#print(list(date)[3].extract().get_text())
+#print(list(date)[4].extract().get_text())
+#print(list(date)[659].extract().get_text())
+print(len(date))
