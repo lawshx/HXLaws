@@ -1,6 +1,7 @@
 import re 
 import requests 
 from bs4 import BeautifulSoup as BS 
+import pandas as pd
 #from lxml import html
 #Request to get information from weather underground
 #req = requests.get('https://www.wunderground.com/forecast/us/nc/charlotte/KCLT?cm_ven=localwx_10day')
@@ -30,16 +31,14 @@ wind = soup.find('direction', type = 'wind')
 #precipitation by the hour
 hourly_precip = soup.find('hourly-qpf')
 
-#printing values without tags
-print(list(hourly_precip)[8].get_text())
-#print(list(date)[8].get_text())
-print(len(list(hourly_temp)))
-#print(len(list(date)))
-print(len(list(hourly_temp)))
-#print(list(date)[0].extract().get_text())
-#print(list(date)[1].extract().get_text())
-#print(list(date)[2].extract().get_text())
-#print(list(date)[3].extract().get_text())
-#print(list(date)[4].extract().get_text())
-#print(list(date)[659].extract().get_text())
-print(len(date))
+WeatherData = pd.DataFrame([list(date)])
+WeatherData = WeatherData.append([list(HI)])
+WeatherData = WeatherData.append([list(hourly_temp)])
+WeatherData = WeatherData.append([list(hourly_precip)])
+WeatherData = WeatherData.append([list(wind)])
+
+tidyWeather = WeatherData.transpose()
+tidyWeather.columns = ['DateTime','Heat Index', 'HrlyTemp', 'HrlyPrecip', 'Wind']
+
+print(WeatherData[7])
+print(tidyWeather[0:6])
