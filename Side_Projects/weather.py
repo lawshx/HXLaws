@@ -31,6 +31,14 @@ wind = soup.find('direction').select('value')
 #precipitation by the hour
 hourly_precip = soup.find('hourly-qpf').select('value')
 
+
+variables = [date, HI, hourly_temp, hourly_precip, wind]
+for i in range(len(variables)):
+    for j in range(len(date)):
+        a = (variables[i])[j]
+        (variables[i])[j] = (variables[i])[j].get_text()
+
+
 WeatherData = pd.DataFrame([date])
 WeatherData = WeatherData.append([HI])
 WeatherData = WeatherData.append([hourly_temp])
@@ -41,4 +49,4 @@ tidyWeather = WeatherData.transpose()
 tidyWeather.columns = ['DateTime','Heat Index', 'HrlyTemp', 'HrlyPrecip', 'Wind']
 
 print(WeatherData[7])
-print(tidyWeather[0:6])
+print(tidyWeather[0:20])
