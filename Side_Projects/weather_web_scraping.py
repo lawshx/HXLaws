@@ -11,8 +11,8 @@ import sys
 
 
 #must specify where the driver is to open browser
-#path = 'C:\\Users\\lawsh\\Downloads\\geckodriver-v0.24.0-win64\\geckodriver'
-path = ''
+#path = 'C:\\Users\\lawsh\\Downloads\\Organize this\\geckodriver-v0.24.0-win64\\geckodriver.exe'
+path = '\usr\local\share\gecko driver\geckodriver.exe'
 
 #This is to ensure the location of the final CSV file
 #filepath = 'C:\\Users\\lawsh\\Downloads\\WeatherData.csv'
@@ -26,9 +26,8 @@ capa = DesiredCapabilities.FIREFOX
 capa["pageLoadStrategy"] = "none"
 
 #define the page load strategy and driver path while setting up browser.
-#browser = webdriver.Firefox(desired_capabilities=capa, executable_path= path)
-browser = webdriver.Firefox(desired_capabilities=capa)
-##browser = webdriver.Firefox(executable_path = path)
+browser = webdriver.Firefox(desired_capabilities=capa, executable_path= path)
+#browser = webdriver.Firefox(desired_capabilities=capa)
 
 #tell the driver to wait for 20 seconds to load desired information.
 #the next steps to stop the page load will be in the for loop below.
