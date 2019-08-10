@@ -11,11 +11,12 @@ import sys
 
 
 #must specify where the driver is to open browser
-path = 'C:\\Users\\lawsh\\Downloads\\geckodriver-v0.24.0-win64\\geckodriver'
+#path = 'C:\\Users\\lawsh\\Downloads\\geckodriver-v0.24.0-win64\\geckodriver'
+path = ''
 
 #This is to ensure the location of the final CSV file
-filepath = 'C:\\Users\\lawsh\\Downloads\\WeatherData.csv'
-
+#filepath = 'C:\\Users\\lawsh\\Downloads\\WeatherData.csv'
+filepath = '~\GitHub\HXLaws\Side_Projects\WeatherData.csv'
 
 #using Firefox as browser
 #To speed up browser, manually stop page load after all needed information is loaded.
@@ -25,8 +26,9 @@ capa = DesiredCapabilities.FIREFOX
 capa["pageLoadStrategy"] = "none"
 
 #define the page load strategy and driver path while setting up browser.
-browser = webdriver.Firefox(desired_capabilities=capa, executable_path= path)
-#browser = webdriver.Firefox(executable_path = path)
+#browser = webdriver.Firefox(desired_capabilities=capa, executable_path= path)
+browser = webdriver.Firefox(desired_capabilities=capa)
+##browser = webdriver.Firefox(executable_path = path)
 
 #tell the driver to wait for 20 seconds to load desired information.
 #the next steps to stop the page load will be in the for loop below.

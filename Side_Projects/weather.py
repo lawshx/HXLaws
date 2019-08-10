@@ -8,6 +8,7 @@ import pandas as pd
 
 
 #request to get weather data from forecast.weather.gov
+#ALL data is hourly
 r = requests.get('https://forecast.weather.gov/MapClick.php?lat=36.2051&lon=-81.6658&lg=english&&FcstType=digitalDWML')
 
 #Parsing as HTML
@@ -19,7 +20,7 @@ soup = BS(r.text,features = 'html.parser')
 #date by the hour
 date = soup.find('time-layout').select('start-valid-time')
 
-
+#Heat Index 
 HI = soup.find('temperature', type = re.compile('heat index')).select('value')
 
 #hourly temperature
