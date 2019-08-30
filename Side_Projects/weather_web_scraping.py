@@ -11,12 +11,12 @@ import sys
 
 
 #must specify where the driver is to open browser
-#path = 'C:\\Users\\lawsh\\Downloads\\Organize this\\geckodriver-v0.24.0-win64\\geckodriver.exe'
-path = '\usr\local\share\gecko driver\geckodriver.exe'
+path = 'C:\\Users\\lawsh\\Downloads\\Organize this\\geckodriver-v0.24.0-win64\\geckodriver.exe'
+#path = '\usr\local\share\gecko driver\geckodriver.exe'
 
 #This is to ensure the location of the final CSV file
-#filepath = 'C:\\Users\\lawsh\\Downloads\\WeatherData.csv'
-filepath = '~\GitHub\HXLaws\Side_Projects\WeatherData.csv'
+filepath = 'C:\\Users\\lawsh\\Downloads\\WeatherData.csv'
+#filepath = '~\GitHub\HXLaws\Side_Projects\WeatherData.csv'
 
 #using Firefox as browser
 #To speed up browser, manually stop page load after all needed information is loaded.
@@ -60,63 +60,47 @@ if DOW == 6 or (DOW < 4 and DOW >= 0):
         browser.get(stations_links[station])
         
         #only wait for the page to load to the specific CSS header thing in ''s.
-        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'html.js.flexbox.flexboxlegacy.canvas.canvastext.webgl.touch.geolocation.postmessage.no-websqldatabase.indexeddb.hashchange.history.draganddrop.websockets.rgba.hsla.multiplebgs.backgroundsize.borderimage.borderradius.boxshadow.textshadow.opacity.cssanimations.csscolumns.cssgradients.no-cssreflections.csstransforms.csstransforms3d.csstransitions.fontface.generatedcontent.video.audio.localstorage.sessionstorage.webworkers.applicationcache.svg.inlinesvg.smil.svgclippaths body.omnibus.page app city-tenday city-tenday-layout div.content-wrap.right-side-nav div#inner-wrap section#inner-content.inner-content.mast-wrap div.city-body div.row.city-forecast div.small-12.columns.has-sidebar div.row div.small-12.columns div.region-content-forecast city-tenday-forecast div.row forecast-graph div.weather-graph div.plots.has-header forecast-graph-plot div.plot-wrap div.plot.n0.plot-header div.flot-header')))
+        wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'html body app-root app-tenday.ng-star-inserted one-column-layout wu-header sidenav.sidenav mat-sidenav-container.mat-drawer-container.mat-sidenav-container mat-sidenav-content.mat-drawer-content.mat-sidenav-content div#inner-wrap section#inner-content.inner-content div.region-content-main div.row div.small-12.columns.has-sidebar div.row div.small-12.columns lib-forecast-chart div.forecast-chart.adaptive div.charts-container.adaptive div.canvas-bounds div.charts-canvas div svg.chart.chart-even.first.pan-viewport svg g.pan-view svg rect.border')))
 
         #stop browser from loading further.
         browser.execute_script("window.stop();")
         
         #obtain information on temperature and precipitaion
-        Temps = browser.find_elements_by_css_selector('span.test-false.wu-unit.wu-unit-temperature')
-        Precip = browser.find_elements_by_css_selector('span.wu-value.wu-value-to')
+        Temps_H = browser.find_elements_by_css_selector('span.temp-hi')
+        Temps_L = browser.find_elements_by_css_selector('span.temp-lo')
 
-        #storing all values found in webscraper as a list.
-        t = [x.text for x in Temps]
-        p = [x.text for x in Precip]
-        pp = []
+        Precip = browser.find_elements_by_css_selector('div.obs-precip.ng-star-inserted')
         
 
-        #Grabing values that are less than 15
-        #Assuming that 15 inches of precipitation is a good threshold to not store an unwanted value.
-        for i in range(len(Precip)):
-            if p[i]=="":
-                print("")
-            elif float(p[i]) <= 15.0:
-                print(float(p[i]))
-                pp.append(float(p[i]))
-
-
-        #empty list to store non-empty values
-        s = []
-
-        #Looking through the list of values and finding those that have format "num | num"
-        #Do this simply by finding "|" character
-        for i in range(len(Temps)):
-            if t[i].find('|') != -1:
-                print(t[i])
-                s.append(t[i][:7]) #[:7] will exclude the " F" in the string "88 | 70 F"
-
-
-        #Creating empty lists to store high and low temperatures
+        #storing all values found in webscraper as a list.
+        t_h = [x.text for x in Temps_H]
+        t_l = [x.text for x in Temps_L]
+        p = [x.text for x in Precip]
+        w = [x.text for x in Wind]
+        
+        #Creating empty lists for each of the recorded values.
+        #These lists will be used to store the correct observations depending on the day of the week (DOW) variable.
         high = []
         low = []
         precip = []
 
-        #If else statements to store the correct high and low temps depending on day of the week (DOW)
+          
+        #If else statements to store the correct precipitation, high and low temps depending on day of the week (DOW)
         #Only need temperatures for Mon,Tues,Wed,Thurs,Fri when DOW = 6 (Sunday)
         #Only need temperatures for Tues,Wed,Thurs,Fri when DOW = 0 (Monday)
         #and so on.
         if DOW == 6:
             for i in range(1,6):
-                print(s[i])
-                high.append(s[i][:2]) #grab first two characters in string (high temperature)
-                low.append(s[i][-2:]) #grab last two characters in string (low temperature)
-                precip.append(pp[i - 1])
+                print(t_h[i][:-1], t_l[i][:-1], float(p[i][:-3]))
+                precip.append(p[i-1][:-3])
+                high.append(t_h[i][:-1])
+                low.append(t_l[i][:-1])
         elif DOW < 4 and DOW >= 0:
             for i in range(1,5 - DOW):
-                print(s[i])
-                high.append(s[i][:2])
-                low.append(s[i][-2:])
-                precip.append(pp[i - 1])
+                print(t_h[i][:-1], t_l[i][:-1], float(p[i][:-3]))
+                precip.append(p[i-1][:-3])
+                high.append(t_h[i][:-1])
+                low.append(t_l[i][:-1])
     
 
         #For easy naming convention each row is either the high or low temperatures for a specific weather station.
@@ -128,17 +112,18 @@ if DOW == 6 or (DOW < 4 and DOW >= 0):
         WeatherData.rename(index = {0:stations[station] + '_precip'}, inplace = True)
         WeatherData # double check that rows are named correctly
     
-
         #Creating new tab to open next web link.
         browser.execute_script('''window.open("about:blank", "_blank");''') #open new tab
         browser.switch_to_window(browser.window_handles[station + 1]) #switch to that new tab
 else:
     print("Today is " + str(DOW))
     print("It is not a day to work.")
+
     
 #close out all tabs and browser window
 browser.quit() 
 
 #exporting dataframe to a specific location
 WeatherData.to_csv(filepath)
+
 
